@@ -51,7 +51,7 @@ var x = d3.scaleLinear().range([0, width]),
 	
 var xAxis = d3.axisBottom(x),
 	yAxis2 = d3.axisLeft(y2).ticks(3);
-	
+
 var brush = d3.brushX()
     .extent([[0, 0], [width, height2]])
     .on("brush end", brushed);
@@ -106,11 +106,29 @@ d3.csv("bubble.csv",
 		x.domain(d3.extent(data, function(d) { return d.Call_Type; }));
 		y2.domain([0, d3.max(data, function(d) { return d.value; })]);
 	
+		/*
 		var color = d3.scaleOrdinal()
 					  .domain(data.map(function(d){ return d.Call_Type; }))
 					  .range(['#fbb4ae','#b3cde3','#ccebc5','#decbe4','#fed9a6', '#ffe9a8','#b9bfe3','#fddaec','#cccccc']);
+		*/
   
-		var root = d3.hierarchy({children: data})
+		//console.log(data);
+		
+		updateBubble(data, 2000, 2008);
+		
+		//updateBubble(data, 2000, 2005);
+		
+		//updateBubble(data, 2003, 2007);
+		
+		/*
+		var lower_bound = 2000;
+		var upper_bound = 2005;
+		data2 = data.filter(function(d) {
+			return d.Call_Type >= lower_bound && d.Call_Type <= upper_bound;
+		});
+		//console.log(data);
+		
+		var root = d3.hierarchy({children: data2})
 				     .sum(function(d) { return d.value; })
 
 		var node = svg.selectAll(".node")
@@ -124,7 +142,7 @@ d3.csv("bubble.csv",
 				.attr("id", function(d) { return d.id; })
 				.attr("r", function(d) { return d.r; })
 				.style("fill", function(d) { return color(d.data.Call_Type); })
-				/*
+				
 				.on("mouseover", function(d) {		
 					div.transition()		
 					.duration(200)		
@@ -144,7 +162,7 @@ d3.csv("bubble.csv",
 					.duration(500)		
 					.style("opacity", 0);	
 				})
-				*/
+				
 				;
 
   
@@ -156,6 +174,7 @@ d3.csv("bubble.csv",
 					}
 					return "";
 				});
+		*/
 				
 		focus.append("g")
              .attr("class", "axis axis--y")
@@ -218,7 +237,27 @@ d3.csv("bubble.csv",
 function brushed() {
 	// TODO: fix this
 	//return;
-	var s = d3.event.selection || x2.range();
+	var s = d3.event.selection || x.range();
+	var min_year = Math.ceil(s[0]/80 + 2000);		// Gets the minimum
+	var max_year = Math.floor(s[1]/80 + 2000);		// Gets the maximum
+	var range_years = [min_year, max_year];
+	
+	d3.csv("bubble.csv", 
+	function(d) {
+		d.value = +d["Count"];
+		d.Call_Type = d["Year"]
+
+		return d;
+	}, 
+	function(error, data) {
+		if (error) throw error;
+		console.log(data); 
+		updateBubble(data, min_year, max_year);
+	});
+	//updateBubble(data, min_year, max_year);
+	//console.log(range_years);
+	
+	
 	//svg.selectAll(".node").remove();
 	/*
 	if (d3.event.sourceEvent && d3.event.sourceEvent.type === "zoom") return; // ignore brush-by-zoom
@@ -230,6 +269,68 @@ function brushed() {
 		.scale(width / (s[1] - s[0]))
 		.translate(-s[0], 0));
 	*/
+}
+
+function updateBubble(data, lower_bound, upper_bound) {
+	svg.selectAll(".node").remove();
+
+	var color = d3.scaleOrdinal()
+					  .domain(data.map(function(d){ return d.Call_Type; }))
+					  .range(['#fbb4ae','#b3cde3','#ccebc5','#decbe4','#fed9a6', '#ffe9a8','#b9bfe3','#fddaec','#cccccc']);
+
+	//var lower_bound = 2000;
+	//var upper_bound = 2005;
+		data2 = data.filter(function(d) {
+			return d.Call_Type >= lower_bound && d.Call_Type <= upper_bound;
+		});
+		//console.log(data);
+		
+		var root = d3.hierarchy({children: data2})
+				     .sum(function(d) { return d.value; })
+
+		var node = svg.selectAll(".node")
+					  .data(pack(root).leaves())
+					  .enter().append("g")
+					  .attr("class", "node")
+					  .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+ 
+  
+		node.append("circle")
+				.attr("id", function(d) { return d.id; })
+				.attr("r", function(d) { return d.r; })
+				.style("fill", function(d) { return color(d.data.Call_Type); })
+				/*
+				.on("mouseover", function(d) {		
+					div.transition()		
+					.duration(200)		
+					.style("opacity", .9);	
+					var duration = 300;
+					data.forEach(function(d, i) {
+						console.log(d.value);
+						node.transition().duration(duration).delay(i * duration)
+							.attr("r", d.value);
+					});
+					div.html(d.data.Call_Type + ": <br>"+d.data.value  )	
+					  .style("left", (d3.event.pageX) + "px")		
+					  .style("top", (d3.event.pageY - 28) + "px");	
+				})					
+				.on("mouseout", function(d) {		
+					div.transition()		
+					.duration(500)		
+					.style("opacity", 0);	
+				})
+				*/
+				;
+
+  
+  
+		node.append("text")
+				.text(function(d) {
+					if (d.data.value > 0 || d.data.Call_Type == "Other" || d.data.Call_Type == "Fire"){
+						return d.data.Call_Type;
+					}
+					return "";
+				});
 }
 
 </script>
