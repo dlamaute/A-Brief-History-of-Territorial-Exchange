@@ -109,7 +109,7 @@ function updateData(value) {
 	updateBubble(lower, upper, isPeople, exchangeType);	
 }
 
-/*
+
 d3.select("#people").on("click", function() {
 					isPeople = true;
 					updateBubble(lower, upper, isPeople, exchangeType);				
@@ -119,7 +119,7 @@ d3.select("#land").on("click", function() {
 					isPeople = false;
 					updateBubble(lower, upper, isPeople, exchangeType);
 					;});
-*/
+
 
 d3.select("select")
   .on("change",function(d){
@@ -241,10 +241,10 @@ function updateBubble(lower_bound, upper_bound, type, exchange) {
 								}
 							});
 							
-							var root = isPeople == true ? d3.hierarchy({children: data2})
+							var root = type == true ? d3.hierarchy({children: data2})
 											.sum(function(d) { return d.people; }) :
 											d3.hierarchy({children: data2})
-											.sum(function(d) { return d.people; });
+											.sum(function(d) { return d.land; });
 
 							var node = svg.selectAll(".node")
 											.data(pack(root).leaves())
