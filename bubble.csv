@@ -1,10 +1,10 @@
-Year,People Count,Land Count,Exchange
-2000,10,10000,War
-2001,20,91283,Treaty
-2002,15,21283,War
-2003,19,29482,Attack
-2004,25,20000,Union
-2005,10,29312,Treaty
-2006,5,241241,Union
-2007,3,12818,War
-2008,1,12938,Union
+Year,People Count,Land Count,Exchange,Countries
+2000,10,10000,War,United States of America
+2001,20,91283,Treaty,Russia
+2002,15,21283,War,Iran
+2003,19,29482,Attack,Japan
+2004,25,20000,Union,Iraq
+2005,10,29312,Treaty,China
+2006,5,241241,Union,United States of America
+2007,3,12818,War,Iran
+2008,1,12938,Union,Germany
