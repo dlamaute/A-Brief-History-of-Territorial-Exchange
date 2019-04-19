@@ -202,7 +202,12 @@ function updateGains(value) {
 		d3.select("#button5").classed("clicked", true);
 	}
 	gains = value;
-	updateBubble(lower, upper, isPeople, exchangeType, gains);	
+	if (value == 0 || value == 1) {
+		updateBubble(lower, upper, isPeople, exchangeType, gains);	
+	}
+	else {
+		updateNetBubble(lower, upper, isPeople, exchangeType);	
+	}
 }
 
 d3.select("#people").on("click", function() {
@@ -300,8 +305,12 @@ function brushed() {
 	
 	lower = min_year
 	upper = max_year
-	updateBubble(lower, upper, isPeople, exchangeType, gains);
-
+	if (gains != 2) {
+		updateBubble(lower, upper, isPeople, exchangeType, gains);
+	}
+	else {
+		updateNetBubble(lower, upper, isPeople, exchangeType);
+	}
 }
 
 function updateBubble(lower_bound, upper_bound, type, exchange, gains) {
@@ -337,7 +346,7 @@ function updateBubble(lower_bound, upper_bound, type, exchange, gains) {
 							});
 							
 							var variable = gains == 0 ? "gainer" : "loser";
-							console.log(variable);
+
 							var data3 = [];
 							for (i=0; i < data2.length; i++) {
 								//console.log(data2[i]);
@@ -384,6 +393,113 @@ function updateBubble(lower_bound, upper_bound, type, exchange, gains) {
 									});
 					});
 }
+
+function updateNetBubble(lower_bound, upper_bound, type, exchange) {
+
+d3.csv("wrangle.csv", 
+				function(d) {
+					d.exchange = d["procedure"];
+					d.land = +d["area"];
+					d.people = +d["pop"];
+					d.year = d["year"];
+					d.gainer = d["gainer"];
+					d.loser = d["loser"];
+
+					return d;
+				}, 
+				function(error, data) {
+					if (error) throw error;
+
+					svg.selectAll(".node").remove();
+
+						data2 = data.filter(function(d) {
+							if (exchange) {
+								return d.year >= lower_bound && d.year <= upper_bound && d.exchange
+								&& d.exchange == exchange;
+							}
+							else {
+								return d.year >= lower_bound && d.year <= upper_bound;
+							}
+						});
+						
+						var data3 = [];
+						for (i=0; i < data2.length; i++) {
+							//console.log(data2[i]);
+							var alreadyPresentGain = false;
+							var alreadyPresentLoss = false;
+							entity2check = data2[i]["gainer"];
+							otherentity2check = data2[i]["loser"];
+							index2save = null;
+							index2save1 = null;
+							for (j=0; j < data3.length; j++) {
+								if (data3[j]["entity"] == entity2check) {
+									index2save = j;
+									alreadyPresentGain = true;
+								}
+								if (data3[j]["entity"] == otherentity2check) {
+									index2save1 = j;
+									alreadyPresentLoss = true;	
+								}
+							}
+							if (alreadyPresentGain == false && alreadyPresentLoss == false) {
+								data2[i]["entity"] = data2[i]["gainer"];
+								data3.push(data2[i]);
+								newdata = {};
+								newdata["exchange"] = -1 * data2[i]["exchange"];
+								newdata["land"] = -1 * data2[i]["land"];
+								newdata["people"] = -1 * data2[i]["people"];
+								newdata["entity"] = data2[i]["loser"];
+								data3.push(newdata);
+							}
+							else {
+								if (alreadyPresentGain == true ) {
+									data3[index2save]["land"] += data2[i]["land"];
+									data3[index2save]["people"] += data2[i]["people"];
+								}
+								else {
+									data3[index2save1]["land"] -= data2[i]["land"];
+									data3[index2save1]["people"] -= data2[i]["people"];
+								}
+							}
+						};
+
+						for (i=0; i < data3.length; i++) {
+							data3[i]["peopleLoss"] = data3[i]["people"] >= 0 ? "false" : "true";
+							data3[i]["landLoss"] = data3[i]["land"] >= 0 ? "false" : "true";
+						}
+						
+						var root = type == true ? d3.hierarchy({children: data3})
+										.sum(function(d) { return Math.abs(d.people); }) :
+										d3.hierarchy({children: data3})
+										.sum(function(d) { return Math.abs(d.land); });
+
+						var node = svg.selectAll(".node")
+										.data(pack(root).leaves())
+										.enter().append("g")
+										.attr("class", "node")
+										.attr("transform", function(d) { return "translate(" + (d.x + 125) + "," + d.y + ")"; });
+
+
+						node.append("circle")
+								.attr("id", function(d) { return d.id; })
+								.attr("r", function(d) { return d.r; })
+								.style("fill", function(d) { 
+									if (type == true) {
+										return d.data.peopleLoss == "false" ? '#fbb4ae' : '#b3cde3';
+									}
+									else {
+										return d.data.landLoss == "false" ? '#fbb4ae' : '#b3cde3';
+									} });
+
+
+						node.append("text")
+								.attr("font-size", function(d) { return 0.25*d.r + "px"; })
+								.text(function(d) {
+									return d.data.entity;
+								});
+				});
+}
+
 </script>
 
 
