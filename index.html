@@ -274,7 +274,8 @@ function updateBubble(lower_bound, upper_bound, type, exchange) {
 						d.exchange = d["procedure"];
 						d.land = +d["area"];
 						d.people = +d["pop"];
-						d.year = d["year"]
+						d.year = d["year"];
+						d.gainer = d["gainer"];
 
 						return d;
 					}, 
@@ -318,7 +319,7 @@ function updateBubble(lower_bound, upper_bound, type, exchange) {
 							node.append("text")
 									.attr("font-size", function(d) { return 0.25*d.r + "px"; })
 									.text(function(d) {
-										return isPeople == true ? d.data.people : d.data.land;
+										return isPeople == true ? "" + d.data.gainer /*+ ": " + d.data.people*/ : "" + d.data.gainer /*+ ": " + d.data.land*/;
 									});
 					});
 }
