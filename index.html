@@ -7,7 +7,6 @@
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <link rel="stylesheet" 	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
 <script src="https://d3js.org/d3.v4.min.js"></script>
-<script type="text/javascript" src="index.js"></script>
 
 <div class="header">
 	<h1>A Brief History of Territorial Exchange</h1>
@@ -20,15 +19,7 @@
 		<button type="button" id="button2" class="btn btn-default" onClick="updateData(true);">People</button>
 </div>
 
-<div class="right-buttons">
-		<select class="custom-select" id ="d3-dropdown">
-				<option value="All">All Exchanges</option>
-				<option value="Treaty">Treaty</option>
-				<option value="Attack">Attack</option>
-				<option value="Union">Union</option>
-				<option value="War">War</option>
-			</select>
-</div>
+<div class="right-buttons" id="exchanges"></div>
 
 <style>
 
@@ -126,12 +117,12 @@ svg {
     height = +svg.attr("height") - margin.top - margin.bottom,
     height2 = +svg.attr("height") - margin2.top - margin2.bottom;
 
-var lower = 2000;
-var upper = 2008;
+var lower = 1815;
+var upper = 2016;
 var isPeople = false;
 var exchangeType = null;
 
-var countries = d3.csv("bubble.csv", function(error, data) {
+var countries = d3.csv("wrangle.csv", function(error, data) {
 			var select = d3.select("#countries")
 				.append("div")
 				.append("select")
@@ -139,11 +130,32 @@ var countries = d3.csv("bubble.csv", function(error, data) {
 				.attr("id", "country")
 	
 			select.selectAll("option")
-				.data(d3.map(data, function(d){return d["Countries"];}).keys())
+				.data(d3.map(data, function(d){return d["gainer"];}).keys())
 				.enter()
 					.append("option")
 					.text(function (d) { return d; });
 		});
+
+		var exchanges = d3.csv("wrangle.csv", function(error, data) {
+			var select = d3.select("#exchanges")
+				.append("div")
+				.append("select")
+				.on('change',onchange)
+				.attr("class", "custom-select")
+				.attr("id", "country")
+	
+			select.selectAll("option")
+				.data(d3.map(data, function(d){return d["procedure"];}).keys())
+				.enter()
+					.append("option")
+					.text(function (d) { return d; });
+		});
+
+function onchange() {
+		var selected = d3.select(this).property("value");
+		exchangeType = selected=="All" ? null : selected;
+		updateBubble(lower, upper, isPeople, exchangeType);
+};
 
 function updateData(value) {
 	if (value == false) {
@@ -167,14 +179,6 @@ d3.select("#land").on("click", function() {
 					isPeople = false;
 					updateBubble(lower, upper, isPeople, exchangeType);
 					;});
-
-
-d3.select("select")
-  .on("change",function(d){
-		var selected = d3.select("#d3-dropdown").node().value;
-		exchangeType = selected=="All" ? null : selected;
-		updateBubble(lower, upper, isPeople, exchangeType);
-})
 					
 var x = d3.scaleLinear().range([0, width]),
     y2 = d3.scaleLinear().range([height2, 0]);
@@ -205,12 +209,12 @@ var pack = d3.pack()
     .size([width-150, height])
     .padding(1.5);
 
-d3.csv("bubble.csv", 
+d3.csv("wrangle.csv", 
 	function(d) {
-		d.exchange = +d["Exchange"];
-		d.land = +d["Land Count"];
-		d.people = +d["People Count"];
-		d.year = d["Year"]
+		d.exchange = +d["procedure"];
+		d.land = +d["area"];
+		d.people = +d["pop"];
+		d.year = d["year"]
 
 		return d;
 	}, 
@@ -249,8 +253,12 @@ d3.csv("bubble.csv",
 function brushed() {
 
 	var s = d3.event.selection || x.range();
-	var min_year = Math.ceil(s[0]/80 + 2000);		// Gets the minimum
-	var max_year = Math.floor(s[1]/80 + 2000);		// Gets the maximum
+	console.log(s[0]);
+	console.log(s[1]);
+	var min_year = Math.ceil(s[0]/3.45 + 1815);		// Gets the minimum
+	var max_year = Math.floor(s[1]/3.45 + 1815);		// Gets the maximum
+	console.log(min_year);
+	console.log(max_year);
 	var range_years = [min_year, max_year]; 
 	
 	lower = min_year
@@ -261,12 +269,12 @@ function brushed() {
 
 function updateBubble(lower_bound, upper_bound, type, exchange) {
 
-	d3.csv("bubble.csv", 
+	d3.csv("wrangle.csv", 
 					function(d) {
-						d.exchange = d["Exchange"];
-						d.land = +d["Land Count"];
-						d.people = +d["People Count"];
-						d.year = d["Year"]
+						d.exchange = d["procedure"];
+						d.land = +d["area"];
+						d.people = +d["pop"];
+						d.year = d["year"]
 
 						return d;
 					}, 
@@ -308,6 +316,7 @@ function updateBubble(lower_bound, upper_bound, type, exchange) {
 
 
 							node.append("text")
+									.attr("font-size", function(d) { return 0.25*d.r + "px"; })
 									.text(function(d) {
 										return isPeople == true ? d.data.people : d.data.land;
 									});
