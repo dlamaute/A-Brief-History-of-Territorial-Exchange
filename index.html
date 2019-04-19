@@ -222,7 +222,7 @@ d3.csv("wrangle.csv",
 		if (error) throw error;
 		
 		x.domain(d3.extent(data, function(d) { return d.year; }));
-		y2.domain([0, d3.max(data, function(d) { return d.people; })]);
+		y2.domain([0, d3.max(data, function(d) { return d.land; })]);
 	
 		
 		updateBubble(lower, upper, isPeople, exchangeType);
