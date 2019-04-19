@@ -36,6 +36,10 @@
   cursor: pointer;
 }
 
+.hidden {
+  display: none;
+}
+
 </style>
 
 <body>
@@ -57,6 +61,14 @@ var projection = d3.geoMercator()
 var zoom = d3.zoom().on("zoom", zoomed);
 var path = d3.geoPath().projection(projection);
 
+/* var color = d3.scaleOrdinal(d3.schemeCategory20);
+var pack = d3.pack()
+    .size([width-150, height])
+    .padding(1.5)
+    .sort(function(d) {
+		return d.x;
+    }); */
+
 var countryMode = false;
 
 var svg = d3.select("body").append("svg")
@@ -74,30 +86,92 @@ var base_g = svg.append("g");
   
 svg.call(zoom); // delete this line to disable free zooming
 
-// Set up the continent map
-d3.json("https://piwodlaiwo.github.io/topojson//world-continents.json",
-	function(error, worldMacro) {
-		if (error) throw error;
+d3.queue()
+  	.defer(d3.json, "final_data/world-continents.json")
+  	.defer(d3.json, "final_data/world-countries.json")
+  	.defer(d3.csv, "final_data/world_country_names.csv")
+  	.defer(d3.csv, "A-Brief-History-of-Territorial-Exchange/wrangle.csv")
+  	.await(setup);
 
-		base_g.selectAll("path")
-	      .data(topojson.feature(worldMacro, worldMacro.objects.continent).features)
+function setup(error, worldContinents, worldCountries, names) {
+	if (error) throw error;
+
+	var continents = topojson.feature(worldContinents, worldContinents.objects.continent).features;
+
+	base_g.selectAll("path")
+      .data(continents)
+      .enter()
+      .append("path")
+      .attr("d", path)
+      .attr("class", "feature continent")
+      .on("click", continentClicked);
+
+  	base_g.append("path")
+      .datum(topojson.mesh(worldContinents, worldContinents.objects.continent, function(a, b) { return a !== b; }))
+      .attr("class", "mesh")
+      .attr("d", path);
+
+    console.log(continents[0]);
+    // console.log(path.bounds(base_g.selectAll("path")[0]));
+
+    var countries = topojson.feature(worldCountries, worldCountries.objects.countries).features;
+
+    console.log(countries[0]);
+
+	countries.filter(function(d) {
+	  	return names.some(function(n) {
+	  		if (d.id == n.id) return d.name = n.name;
+	  	})
+	});
+
+	  base_g.selectAll("path")
+	      .data(countries)
 	      .enter()
 	      .append("path")
 	      .attr("d", path)
-	      .attr("class", "feature continent")
-	      .on("click", continentClicked);
+	      .attr("class", "country")
+	      .on("click", countryClicked);
 
-	  	base_g.append("path")
-	      .datum(topojson.mesh(worldMacro, worldMacro.objects.continent, function(a, b) { return a !== b; }))
+	  base_g.append("path")
+	      .datum(topojson.mesh(worldCountries, worldCountries.objects.countries, function(a, b) { return a !== b; }))
 	      .attr("class", "mesh")
 	      .attr("d", path);
-	});
+
+	  var centroidItems = countries.map(function(feature) {
+    		var centroidItem = path.centroid(feature);
+    		centroidItem.push(feature.name);
+    		return centroidItem;
+  		});
+	  console.log(centroidItems[0]);
+
+	  var centroidElements = base_g.selectAll(".centroid")
+	  	.data(centroidItems)
+	  	.enter()
+	  	.append("g");
+
+	  centroidElements.append("circle")
+	  	.attr("class", "centroid")
+	  	.attr("r", 5)
+	  	.attr("cx", function(d) { return d[0]; })
+        .attr("cy", function(d) { return d[1]; })
+        .on("click", countryClicked);
+
+      centroidElements.append("text")
+      	.text(function(d) { return d[2]; })
+      	.attr("x", function(d) { return d[0]; })
+        .attr("y", function(d) { return d[1]; })
+        .attr("font-size", "10px")
+        .attr("text-anchor", "middle");
+
+}
 
 // When a continent is clicked, zoom in and show the country level map
 function continentClicked(d) {
   if (active.node() === this) return reset();
   active.classed("active", false);
   active = d3.select(this).classed("active", true);
+
+  console.log(d);
 
   var bounds = path.bounds(d),
       dx = bounds[1][0] - bounds[0][0],
@@ -107,16 +181,21 @@ function continentClicked(d) {
       scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / width, dy / height))),
       translate = [width / 2 - scale * x, height / 2 - scale * y];
 
+  console.log(path.bounds(d));
+  console.log(bounds);
+
   svg.transition()
       .duration(750)
       .call( zoom.transform, d3.zoomIdentity.translate(translate[0],translate[1]).scale(scale) );
 
-  d3.queue()
+   // base_g.selectAll(".country")
+
+  /* d3.queue()
   	.defer(d3.json, "https://unpkg.com/world-atlas@1/world/50m.json")
   	.defer(d3.csv, "final_data/world_country_names.csv")
-  	.await(ready);
+  	.await(update);
 
-  function ready(error, world, names) {
+  function update(error, world, names) {
 	  if (error) throw error;
 
 	  var countries = topojson.feature(world, world.objects.countries).features; 
@@ -167,7 +246,7 @@ function continentClicked(d) {
         .attr("text-anchor", "middle");
 
 	  countryMode = true;
-	}
+	} */
 }
 
 function countryClicked(d) {
