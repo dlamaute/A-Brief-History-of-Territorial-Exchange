@@ -229,7 +229,7 @@ var area2 = d3.area()
     .curve(d3.curveLinear)		// maybe use d3.curveStep instead?
     .x(function(d) { return x(d.year); })
     .y0(height2)
-    .y1(function(d) { return y2(d.people); });
+    .y1(function(d) { return y2(d.land); });
 	
 var focus = svg.append("g")
     .attr("class", "focus")
