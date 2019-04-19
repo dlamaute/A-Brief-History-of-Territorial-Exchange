@@ -19,6 +19,13 @@
 		<button type="button" id="button2" class="btn btn-default" onClick="updateData(true);">People</button>
 </div>
 
+<div id="other-story-buttons" class="btn-group" role="group" aria-label="people">
+	<button type="button" id="button3" class="btn btn-default" onClick="updateGains(0);">Gains</button>
+	<button type="button" id="button4" class="btn btn-default" onClick="updateGains(1);">Losses</button>
+	<button type="button" id="button5" class="btn btn-default" onClick="updateGains(2);">Net</button>
+</div>
+
+
 <div class="right-buttons" id="exchanges"></div>
 
 <style>
@@ -45,8 +52,15 @@ h1 {
 
 #story-buttons {
   position: absolute;
-  left: 42%;
+  left: 41%;
   top: 25px;
+	z-index: 2;
+}
+
+#other-story-buttons {
+  position: absolute;
+  left: 41%;
+  top: 75px;
 	z-index: 2;
 }
 
@@ -121,6 +135,7 @@ var lower = 1815;
 var upper = 2016;
 var isPeople = false;
 var exchangeType = null;
+var gains = 0;
 
 var countries = d3.csv("wrangle.csv", function(error, data) {
 			var select = d3.select("#countries")
@@ -154,7 +169,7 @@ var countries = d3.csv("wrangle.csv", function(error, data) {
 function onchange() {
 		var selected = d3.select(this).property("value");
 		exchangeType = selected=="All" ? null : selected;
-		updateBubble(lower, upper, isPeople, exchangeType);
+		updateBubble(lower, upper, isPeople, exchangeType, gains);
 };
 
 function updateData(value) {
@@ -167,17 +182,37 @@ function updateData(value) {
 		d3.select("#button2").classed("clicked", true);
 	}
 	isPeople = value;
-	updateBubble(lower, upper, isPeople, exchangeType);	
+	updateBubble(lower, upper, isPeople, exchangeType, gains);	
+}
+
+function updateGains(value) {
+	if (value == 0) {
+		d3.select("#button3").classed("clicked", true);
+		d3.select("#button4").classed("clicked", false);
+		d3.select("#button5").classed("clicked", false);
+	}
+	else if (value == 1) {
+		d3.select("#button3").classed("clicked", false);
+		d3.select("#button4").classed("clicked", true);
+		d3.select("#button5").classed("clicked", false);
+	}
+	else {
+		d3.select("#button3").classed("clicked", false);
+		d3.select("#button4").classed("clicked", false);
+		d3.select("#button5").classed("clicked", true);
+	}
+	gains = value;
+	updateBubble(lower, upper, isPeople, exchangeType, gains);	
 }
 
 d3.select("#people").on("click", function() {
 					isPeople = true;
-					updateBubble(lower, upper, isPeople, exchangeType);				
+					updateBubble(lower, upper, isPeople, exchangeType, gains);				
 				});
 
 d3.select("#land").on("click", function() {
 					isPeople = false;
-					updateBubble(lower, upper, isPeople, exchangeType);
+					updateBubble(lower, upper, isPeople, exchangeType, gains);
 					;});
 					
 var x = d3.scaleLinear().range([0, width]),
@@ -223,9 +258,11 @@ d3.csv("wrangle.csv",
 		
 		x.domain(d3.extent(data, function(d) { return d.year; }));
 		y2.domain([0, d3.max(data, function(d) { return d.land; })]);
+		d3.select("#button1").classed("clicked", true);
+		d3.select("#button3").classed("clicked", true);
 	
 		
-		updateBubble(lower, upper, isPeople, exchangeType);
+		updateBubble(lower, upper, isPeople, exchangeType, gains);
 
 		focus.append("g")
              .attr("class", "axis axis--y")
@@ -263,11 +300,11 @@ function brushed() {
 	
 	lower = min_year
 	upper = max_year
-	updateBubble(lower, upper, isPeople, exchangeType);
+	updateBubble(lower, upper, isPeople, exchangeType, gains);
 
 }
 
-function updateBubble(lower_bound, upper_bound, type, exchange) {
+function updateBubble(lower_bound, upper_bound, type, exchange, gains) {
 
 	d3.csv("wrangle.csv", 
 					function(d) {
@@ -276,6 +313,7 @@ function updateBubble(lower_bound, upper_bound, type, exchange) {
 						d.people = +d["pop"];
 						d.year = d["year"];
 						d.gainer = d["gainer"];
+						d.loser = d["loser"];
 
 						return d;
 					}, 
@@ -297,16 +335,17 @@ function updateBubble(lower_bound, upper_bound, type, exchange) {
 									return d.year >= lower_bound && d.year <= upper_bound;
 								}
 							});
-							//console.log(data2);
-							console.log(" ");
+							
+							var variable = gains == 0 ? "gainer" : "loser";
+							console.log(variable);
 							var data3 = [];
 							for (i=0; i < data2.length; i++) {
 								//console.log(data2[i]);
 								var alreadyPresent = false;
-								entity2check = data2[i]["gainer"];
+								entity2check = data2[i][variable];
 								index2save = null;
 								for (j=0; j < data3.length; j++) {
-									if (data3[j]["gainer"] == entity2check) {
+									if (data3[j][variable] == entity2check) {
 										index2save = j;
 										alreadyPresent = true;
 									}
@@ -319,7 +358,6 @@ function updateBubble(lower_bound, upper_bound, type, exchange) {
 									data3.push(data2[i]);
 								}
 							}
-							console.log(data3);
 							
 							var root = type == true ? d3.hierarchy({children: data3})
 											.sum(function(d) { return d.people; }) :
@@ -342,7 +380,7 @@ function updateBubble(lower_bound, upper_bound, type, exchange) {
 							node.append("text")
 									.attr("font-size", function(d) { return 0.25*d.r + "px"; })
 									.text(function(d) {
-										return isPeople == true ? "" + d.data.gainer /*+ ": " + d.data.people*/ : "" + d.data.gainer /*+ ": " + d.data.land*/;
+										return gains == 0 ? d.data.gainer : d.data.loser;
 									});
 					});
 }
