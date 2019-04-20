@@ -170,6 +170,7 @@ function onchange() {
 		var selected = d3.select(this).property("value");
 		exchangeType = selected=="All" ? null : selected;
 		updateBubble(lower, upper, isPeople, exchangeType, gains);
+		updateTimeline(exchangeType);
 };
 
 function updateData(value) {
@@ -219,88 +220,125 @@ d3.select("#land").on("click", function() {
 					isPeople = false;
 					updateBubble(lower, upper, isPeople, exchangeType, gains);
 					;});
-					
-var x = d3.scaleLinear().range([0, width]),
-    y2 = d3.scaleLinear().range([height2, 0]);
-	
-var xAxis = d3.axisBottom(x),
-	yAxis2 = d3.axisLeft(y2).ticks(3);
-
-var brush = d3.brushX()
-    .extent([[0, 0], [width, height2]])
-    .on("brush end", brushed);
-	
-var area2 = d3.area()
-    .curve(d3.curveLinear)		// maybe use d3.curveStep instead?
-    .x(function(d) { return x(d.year); })
-    .y0(height2)
-    .y1(function(d) { return y2(d.land); });
-	
-var focus = svg.append("g")
-    .attr("class", "focus")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-	
-// bottom chart
-var context = svg.append("g")
-    .attr("class", "context")
-    .attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
 
 var pack = d3.pack()
     .size([width-150, height])
     .padding(1.5);
-
-d3.csv("wrangle.csv", 
-	function(d) {
-		d.exchange = +d["procedure"];
-		d.land = +d["area"];
-		d.people = +d["pop"];
-		d.year = d["year"]
-
-		return d;
-	}, 
-	function(error, data) {
-		if (error) throw error;
-		
-		x.domain(d3.extent(data, function(d) { return d.year; }));
-		y2.domain([0, d3.max(data, function(d) { return d.land; })]);
-		d3.select("#button1").classed("clicked", true);
-		d3.select("#button3").classed("clicked", true);
 	
-		
-		updateBubble(lower, upper, isPeople, exchangeType, gains);
+// INITIALIZATION
+updateTimeline("All");
+d3.select("#button1").classed("clicked", true);
+d3.select("#button3").classed("clicked", true);
+	
+function updateTimeline(exchangeType) {
 
-		focus.append("g")
-             .attr("class", "axis axis--y")
-	         .attr("transform", "translate(0," + (height + 10) + ")")
-             .call(yAxis2);
-		
-		// context is the bottom chart
-		context.append("path")
-			  .datum(data)
-			  .attr("class", "area")
-			  .attr("d", area2);
+	d3.csv("wrangle.csv", 
+		function(d) {
+			d.exchange = +d["procedure"];
+			d.land = +d["area"];
+			d.people = +d["pop"];
+			d.year = d["year"];
+			d.count = d["count"];
 
-		context.append("g")
-			  .attr("class", "axis axis--x")
-			  .attr("transform", "translate(0," + height2 + ")")
-			  .call(xAxis);
+			return d;
+		}, 
+		function(error, data) {
+			if (error) throw error;
+			
+			svg.selectAll(".focus").remove();
+			svg.selectAll(".context").remove();
+			
+			var x = d3.scaleLinear().range([0, width]),
+				y2 = d3.scaleLinear().range([height2, 0]);
+				
+			var yTicks = 6;
+			if (exchangeType=="Annexation") {
+				yTicks = 3;
+			}
+			if (exchangeType=="Conquest") {
+				yTicks = 4;
+			}
+			if (exchangeType=="Unification") {
+				yTicks = 6;
+			}
 
-		context.append("g")
-			  .attr("class", "brush")
-			  .call(brush)
-			  .call(brush.move, x.range());
-  
-});
+			var xAxis = d3.axisBottom(x).ticks(20).tickFormat(d3.format(".4")),
+				yAxis2 = d3.axisLeft(y2).ticks(yTicks);
+
+			var brush = d3.brushX()
+				.extent([[0, 0], [width, height2]])
+				.on("brush end", brushed);
+				
+			var area2 = d3.area()
+				.curve(d3.curveStep)
+				.x(function(d) { return x(d["year"]/*.year*/); })
+				.y0(height2)
+				.y1(function(d) { return y2(d["count"]/*.count*/); });
+				
+			var focus = svg.append("g")
+				.attr("class", "focus")
+				.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+				
+			var context = svg.append("g")
+				.attr("class", "context")
+				.attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
+
+			
+			data4timeline = []
+			for (i=1816; i<=2018; i++) {
+				year_string = "" + i;
+				data4timeline.push( {"year": year_string, "count": 0, "pop": 0, "area": 0} );
+			}
+			
+			for (i=0; i<data.length; i++) {
+				if (exchangeType=="All" || exchangeType==null || data[i]["procedure"]==exchangeType) {
+					thisYear = data[i]["year"]
+					for (j=1816; j<=2018; j++) {
+						if (thisYear == j) {
+							data4timeline[j-1816]["count"] += 1;
+						}
+					}
+				}
+			}
+			
+			// Set the timeline line graph domain
+			x.domain(d3.extent(data4timeline, function(d) { return d["year"]/*.year*/; }));
+			y2.domain([0, d3.max(data4timeline, function(d) { return d["count"]/*.count*/; })]);
+
+			// Draw the y-axis
+			focus.append("g")
+				 .attr("class", "axis axis--y")
+				 .attr("transform", "translate(0," + (height + 10) + ")")
+				 .call(yAxis2);
+			
+			
+			// Draw the line graph given the data
+			context.append("path")
+				  .datum(data4timeline)
+				  .attr("class", "area")
+				  .attr("d", area2);
+
+			// Draw the x-axis
+			context.append("g")
+				  .attr("class", "axis axis--x")
+				  .attr("transform", "translate(0," + height2 + ")")
+				  .call(xAxis);
+
+			// Draw the brush
+			context.append("g")
+				  .attr("class", "brush")
+				  .call(brush)
+				  .call(brush.move, x.range());
+	  
+	});
+
+}
 
 function brushed() {
 
 	var s = d3.event.selection || x.range();
-	console.log(s[0]);
-	console.log(s[1]);
 	var min_year = Math.ceil(s[0]/3.45 + 1815);		// Gets the minimum
 	var max_year = Math.floor(s[1]/3.45 + 1815);		// Gets the maximum
-	//console.log(min_year);
-	//console.log(max_year);
 	var range_years = [min_year, max_year]; 
 	
 	lower = min_year
