@@ -10,6 +10,7 @@
 
 <div class="header">
 	<h1>A Brief History of Territorial Exchange</h1>
+	<p id="yrs"> - </p>
 	<p id="heading"> Search by Country: </p>
 	<div id="countries"></div>
 </div>
@@ -46,7 +47,12 @@ h1 {
 }
 
 #heading{
-	padding-top: 10%;
+	padding-top: 5%;
+	font-size: 25px;
+}
+
+#yrs{
+	padding-top: 5%;
 	font-size: 25px;
 }
 
@@ -173,6 +179,13 @@ function onchange() {
 		updateTimeline(exchangeType);
 };
 
+function updateYearsBanner(lower, upper) {
+	var select = d3.select("#yrs")
+					.text("" + lower + " - " + upper);
+}
+
+updateYearsBanner(lower, upper);
+
 function updateData(value) {
 	if (value == false) {
 		d3.select("#button1").classed("clicked", true);
@@ -183,7 +196,12 @@ function updateData(value) {
 		d3.select("#button2").classed("clicked", true);
 	}
 	isPeople = value;
-	updateBubble(lower, upper, isPeople, exchangeType, gains);	
+	if (gains == 0 || value == gains) {
+		updateBubble(lower, upper, isPeople, exchangeType, gains);	
+	}
+	else {
+		updateNetBubble(lower, upper, isPeople, exchangeType);	
+	}
 }
 
 function updateGains(value) {
@@ -337,12 +355,15 @@ function updateTimeline(exchangeType) {
 function brushed() {
 
 	var s = d3.event.selection || x.range();
-	var min_year = Math.ceil(s[0]/3.45 + 1815);		// Gets the minimum
-	var max_year = Math.floor(s[1]/3.45 + 1815);		// Gets the maximum
+	var min_year = Math.ceil(s[0]/3.41584 + 1815);		// Gets the minimum
+	var max_year = Math.floor(s[1]/3.41584 + 1815);		// Gets the maximum
 	var range_years = [min_year, max_year]; 
 	
 	lower = min_year
 	upper = max_year
+	
+	updateYearsBanner(lower, upper);
+	
 	if (gains != 2) {
 		updateBubble(lower, upper, isPeople, exchangeType, gains);
 	}
