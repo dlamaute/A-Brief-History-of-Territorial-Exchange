@@ -17,8 +17,7 @@
 }
 
 .country {
-  fill: none;
-  stroke: none;
+  fill: #ccc;
   cursor: pointer;
 }
 
@@ -30,7 +29,7 @@
 }
 
 .centroid {
-  fill: #ab1bab;
+  /* fill: #ab1bab; */
   stroke: #000;
   stroke-width: 0.1;
   cursor: pointer;
@@ -52,6 +51,9 @@
 
 var width = 960,
     height = 500,
+    padding = 1.5,
+    clusterPadding = 6,
+    maxRadius = 12, // this should actually vary with the current node options
     active = d3.select(null);
 
 var projection = d3.geoMercator()
@@ -83,6 +85,19 @@ svg.append("rect")
     .on("click", reset);
 
 var base_g = svg.append("g");
+
+var continentClusterCodes = {
+	"Africa": 1,
+	"Asia": 2,
+	"Europe": 3,
+	"North America": 4,
+	"South America": 5,
+	"Oceania": 6,
+	"Antarctica": 7
+}
+
+var centroidItems = [];
+var continentCentroids = {};
   
 svg.call(zoom); // delete this line to disable free zooming
 
@@ -93,12 +108,73 @@ d3.queue()
   	.defer(d3.csv, "A-Brief-History-of-Territorial-Exchange/wrangle.csv")
   	.await(setup);
 
-function setup(error, worldContinents, worldCountries, names) {
+function setup(error, worldContinents, worldCountries, names, exchange) {
 	if (error) throw error;
 
-	var continents = topojson.feature(worldContinents, worldContinents.objects.continent).features;
+	var continentsData = topojson.feature(worldContinents, worldContinents.objects.continent).features;
+	var countriesData = topojson.feature(worldCountries, worldCountries.objects.countries).features;
 
-	base_g.selectAll("path")
+	// set up continents
+	var continent_gs = base_g.append("g")
+          .attr("class", "feature continent")
+          .selectAll(".feature")
+          .data(continentsData)
+          .enter()
+          .append("path")
+          .attr("name", function(d) {return d.properties.continent;})
+          // .attr("id", function(d) { return d.id;})
+          .on('click', continentClicked)
+          // .on("mousemove", showTooltip)
+          // .on("mouseout",  function(d,i) {
+          //    tooltip.classed("hidden", true);
+          // })
+          .attr("d", path);
+
+    for (var c of continentsData) {
+    	var centroid = path.centroid(c);
+		continentCentroids[c.properties.continent] = {
+			x: path.centroid(c)[0],
+			y: path.centroid(c)[1],
+			radius: 0
+		};
+	}
+	console.log(continentCentroids);
+
+    // filter exchange here to get countryExchangeData
+    var countryExchangeData = {} // incorporate other code
+
+    // set up countries
+    countriesData.filter(function(d) {
+	  	return names.some(function(n) {
+	  		if (d.id == n.id) {
+	  			d.name = n.name;
+	  			d.nameCode = n.alpha_3;
+	  			if (n.region != "Americas") {
+	  				d.region = n.region;
+	  			} else if (n.region == "South America") { 
+	  				d.region = n.subregion; 
+	  			} else {
+	  				d.region = "North America";
+	  			}
+	  		}
+	  		d.radius = 5;
+		  	d.color = "#7711cb";
+	  	});
+
+	  	// for when countryExchangeData is implemented
+	  	/* countryExchangeData.some(function(e) {
+	  		if (d.nameCode = e.nameCode) {
+		  		d.radius = 5;
+		  		d.color = #ab1bab;
+		  	}
+	  	}); */
+	});
+
+
+    var continents = base_g.selectAll(".continent");
+    var countries = base_g.selectAll(".country");
+
+	/* base_g.selectAll("path")
       .data(continents)
       .enter()
       .append("path")
@@ -109,16 +185,16 @@ function setup(error, worldContinents, worldCountries, names) {
   	base_g.append("path")
       .datum(topojson.mesh(worldContinents, worldContinents.objects.continent, function(a, b) { return a !== b; }))
       .attr("class", "mesh")
-      .attr("d", path);
+      .attr("d", path); */
 
-    console.log(continents[0]);
+    // console.log(continents[0]);
     // console.log(path.bounds(base_g.selectAll("path")[0]));
 
-    var countries = topojson.feature(worldCountries, worldCountries.objects.countries).features;
+    /* var countries = topojson.feature(worldCountries, worldCountries.objects.countries).features;
 
     console.log(countries[0]);
 
-	countries.filter(function(d) {
+	countriesData.filter(function(d) {
 	  	return names.some(function(n) {
 	  		if (d.id == n.id) return d.name = n.name;
 	  	})
@@ -135,31 +211,59 @@ function setup(error, worldContinents, worldCountries, names) {
 	  base_g.append("path")
 	      .datum(topojson.mesh(worldCountries, worldCountries.objects.countries, function(a, b) { return a !== b; }))
 	      .attr("class", "mesh")
-	      .attr("d", path);
+	      .attr("d", path); */
 
-	  var centroidItems = countries.map(function(feature) {
-    		var centroidItem = path.centroid(feature);
-    		centroidItem.push(feature.name);
+	   centroidItems = countriesData.map(function(feature) {
+    		var centroidItem = {
+    			x: path.centroid(feature)[0],
+    			y: path.centroid(feature)[1],
+    			radius: feature.radius,
+    			name: feature.name,
+    			color: feature.color,
+    			cluster: continentClusterCodes[feature.region],
+    			region: feature.region
+    		};
+    		// console.log(feature);
+    		// centroidItem.push(feature.radius);
+    		// centroidItem.push(feature.name);
     		return centroidItem;
   		});
-	  console.log(centroidItems[0]);
+	  // console.log(centroidItems[0]);
+
+	  /* var force = d3.layout.force()
+	    .nodes(centroidItems)
+	    .size([width, height])
+	    .gravity(.02)
+	    .charge(0)
+	    .on("tick", tick)
+	    .start(); */
+
+	  var simulation = d3.forceSimulation(centroidItems)
+		  .velocityDecay(0.2)
+	      // .force("x", d3.forceX().strength(.0005))
+	      // .force("y", d3.forceY().strength(.0005))
+	      .force("collide", collide)
+	      .force("cluster", cluster)
+	      .on("tick", tick);
 
 	  var centroidElements = base_g.selectAll(".centroid")
 	  	.data(centroidItems)
 	  	.enter()
 	  	.append("g");
 
-	  centroidElements.append("circle")
+	  var centroids = centroidElements.append("circle")
 	  	.attr("class", "centroid")
-	  	.attr("r", 5)
-	  	.attr("cx", function(d) { return d[0]; })
-        .attr("cy", function(d) { return d[1]; })
+	  	.attr("fill", function(d) { return d.color; })
+	  	.attr("r", function(d) { return d.radius; })
+	  	.attr("cx", function(d) { return d.x; })
+        .attr("cy", function(d) { return d.y; })
+        // .call(force.drag)
         .on("click", countryClicked);
 
       centroidElements.append("text")
-      	.text(function(d) { return d[2]; })
-      	.attr("x", function(d) { return d[0]; })
-        .attr("y", function(d) { return d[1]; })
+      	.text(function(d) { return d.name; })
+      	.attr("x", function(d) { return d.x; })
+        .attr("y", function(d) { return d.y; })
         .attr("font-size", "10px")
         .attr("text-anchor", "middle");
 
@@ -167,7 +271,7 @@ function setup(error, worldContinents, worldCountries, names) {
 
 // When a continent is clicked, zoom in and show the country level map
 function continentClicked(d) {
-  if (active.node() === this) return reset();
+  /* if (active.node() === this) return reset(); */
   active.classed("active", false);
   active = d3.select(this).classed("active", true);
 
@@ -188,7 +292,7 @@ function continentClicked(d) {
       .duration(750)
       .call( zoom.transform, d3.zoomIdentity.translate(translate[0],translate[1]).scale(scale) );
 
-   // base_g.selectAll(".country")
+  // base_g.selectAll(".country")
 
   /* d3.queue()
   	.defer(d3.json, "https://unpkg.com/world-atlas@1/world/50m.json")
@@ -206,7 +310,7 @@ function continentClicked(d) {
 	  	})
 	  });
 
-	  base_g.selectAll("path")
+	  /* base_g.selectAll("path")
 	      .data(countries)
 	      .enter()
 	      .append("path")
@@ -250,6 +354,9 @@ function continentClicked(d) {
 }
 
 function countryClicked(d) {
+	/* if (active.node() === this) return reset();
+  	active.classed("active", false);
+  	active = d3.select(this).classed("active", true); */
 	console.log("country clicked");
 	console.log(d);
 }
@@ -274,6 +381,35 @@ function reset() {
 function zoomed() {
   base_g.style("stroke-width", 1.5 / d3.event.transform.k + "px");
   base_g.attr("transform", d3.event.transform); 
+
+  var continents = base_g.selectAll(".continent");
+  var countries = base_g.selectAll(".country");
+
+  var s = d3.event.scale;
+
+  if(s > 1.5) {
+  		countries.attr("class", "feature country");
+  		continents.attr("class", "feature continent hidden");
+  		/*
+        states
+          .classed('hidden', false);
+        usa
+          .classed('hidden', true);
+        canada
+          .classed('hidden', true);
+        */
+      } else {
+      	countries.attr("class", "feature country hidden");
+  		continents.attr("class", "feature continent");
+      /*
+      states
+        .classed('hidden', true);
+      usa
+        .classed('hidden', false);
+      canada
+        .classed('hidden', false);
+     */
+    }
 }
 
 // If the drag behavior prevents the default click,
@@ -281,4 +417,69 @@ function zoomed() {
 function stopped() {
   if (d3.event.defaultPrevented) d3.event.stopPropagation();
 }
+
+function tick(e) {
+	// console.log(e);
+ 	base_g.selectAll(".centroid")
+      // .each(cluster(10 * e.alpha * e.alpha))
+      // .each(collide(.5))
+      .attr("cx", function(d) { return d.x; })
+      .attr("cy", function(d) { return d.y; });
+}
+
+// Move d to be adjacent to the cluster node.
+function cluster(alpha) {
+  return function(d) {
+    // if (cluster === d) return;
+  console.log(centroidItems);
+  // centroidItems.forEach( function(d) {
+  	console.log(d);
+  	console.log(continentCentroids["North America"]);
+    var cluster = continentCentroids[d.region];
+    var x = d.x - cluster.x,
+        y = d.y - cluster.y,
+        l = Math.sqrt(x * x + y * y),
+        r = d.radius + cluster.radius;
+    if (l != r) {
+      l = (l - r) / l * alpha;
+      d.x -= x *= l;
+      d.y -= y *= l;
+      cluster.x += x;
+      cluster.y += y;
+    }
+  };
+}
+
+function collide(alpha) {
+  // console.log(centroidItems);	
+  var quadtree = d3.quadtree()
+  		.x((d) => d.x)
+        .y((d) => d.y)
+        .addAll(centroidItems);
+  // return function(d) {
+  centroidItems.forEach(function(d) {
+    var r = d.radius + maxRadius + Math.max(padding, clusterPadding),
+        nx1 = d.x - r,
+        nx2 = d.x + r,
+        ny1 = d.y - r,
+        ny2 = d.y + r;
+    quadtree.visit(function(quad, x1, y1, x2, y2) {
+      if (quad.data && (quad.data !== d)) {
+        var x = d.x - quad.data.x,
+            y = d.y - quad.data.y,
+            l = Math.sqrt(x * x + y * y),
+            r = d.radius + quad.data.radius + (d.cluster === quad.data.cluster ? padding : clusterPadding);
+        if (l < r) {
+          l = (l - r) / l * alpha;
+          d.x -= x *= l;
+          d.y -= y *= l;
+          quad.data.x += x;
+          quad.data.y += y;
+        }
+      }
+      return x1 > nx2 || x2 < nx1 || y1 > ny2 || y2 < ny1;
+    });
+  });
+}
+
 </script>
