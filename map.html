@@ -271,9 +271,7 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
   // console.log(centroidItems[0]);
 
   var simulation = d3.forceSimulation(centroidItems)
-	  // .velocityDecay(0.2)
-    // .force("x", d3.forceX().strength(.0005))
-    // .force("y", d3.forceY().strength(.0005))
+	  .velocityDecay(0.5)
     .force("collide", collide)
     .force("cluster", cluster)
     .on("tick", tick);
@@ -471,7 +469,10 @@ function cluster(alpha) {
   	// console.log(continentCentroids[d.region]);
     if (d.region) {
       var cluster = continentCentroids[d.region];
-      if (d.name == "Latvia") {
+      if (d.name == "Bermuda") {
+        console.log("d:");
+        console.log(d);
+        console.log("cluster:");
         console.log(cluster);
       }
       var x = d.x - cluster.x,
@@ -482,19 +483,16 @@ function cluster(alpha) {
         l = (l - r) / l * alpha;
         d.x -= x *= l;
         d.y -= y *= l;
-        cluster.x += x;
-        cluster.y += y;
       }
     }
   });
 }
 
-function collide(alpha) {
-  // console.log(centroidItems);	
+function collide(alpha) {	
   var quadtree = d3.quadtree()
-  		.x((d) => d.x)
-        .y((d) => d.y)
-        .addAll(centroidItems);
+		.x((d) => d.x)
+    .y((d) => d.y)
+    .addAll(centroidItems);
   // return function(d) {
   centroidItems.forEach(function(d) {
     var r = d.radius + maxRadius + Math.max(padding, clusterPadding),
