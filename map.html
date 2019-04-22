@@ -63,15 +63,7 @@ var projection = d3.geoMercator()
 var zoom = d3.zoom().on("zoom", zoomed);
 var path = d3.geoPath().projection(projection);
 
-/* var color = d3.scaleOrdinal(d3.schemeCategory20);
-var pack = d3.pack()
-    .size([width-150, height])
-    .padding(1.5)
-    .sort(function(d) {
-		return d.x;
-    }); */
-
-var countryMode = false;
+var countryMode = false;  // delete?
 
 var svg = d3.select("body").append("svg")
     .attr("width", width)
@@ -102,10 +94,10 @@ var continentCentroids = {};
 svg.call(zoom); // delete this line to disable free zooming
 
 d3.queue()
-  	.defer(d3.json, "final_data/world-continents.json")
-  	.defer(d3.json, "final_data/world-countries.json")
-  	.defer(d3.csv, "final_data/world_country_names.csv")
-  	.defer(d3.csv, "A-Brief-History-of-Territorial-Exchange/wrangle.csv")
+  	.defer(d3.json, "world-continents.json")
+  	.defer(d3.json, "world-countries.json")
+  	.defer(d3.csv, "world_country_names.csv")
+  	.defer(d3.csv, "wrangle.csv")
   	.await(setup);
 
 function setup(error, worldContinents, worldCountries, names, exchange) {
@@ -140,25 +132,66 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
 	}
 	console.log(continentCentroids);
 
+  /* for debugging continent centroid locations */
+  var contCentroidElements = base_g.selectAll(".contCentroid")
+      .data(continentCentroids)
+      .enter()
+      .append("g");
+
+  contCentroidElements.append("circle")
+      .attr("class", "contCentroid")
+      .attr("fill", function(d) { return "#ff0000"; })
+      .attr("r", function(d) { return 10; })
+      .attr("cx", function(d) { return d.x; })
+      .attr("cy", function(d) { return d.y; });
+
+  /* end debug */
+
     // filter exchange here to get countryExchangeData
-    var countryExchangeData = {} // incorporate other code
+    var countryExchangeData = {} // incorporate three-letter code
 
     // set up countries
     countriesData.filter(function(d) {
 	  	return names.some(function(n) {
-	  		if (d.id == n.id) {
+	  		if (parseInt(d.id) == parseInt(n.id)) {
 	  			d.name = n.name;
 	  			d.nameCode = n.alpha_3;
 	  			if (n.region != "Americas") {
 	  				d.region = n.region;
-	  			} else if (n.region == "South America") { 
+	  			} else if (n.subregion == "South America") { 
 	  				d.region = n.subregion; 
 	  			} else {
 	  				d.region = "North America";
 	  			}
+          d.radius = 5; // irl to be determined by exchange data
+          /* debug for identifying separate clusters */
+          switch(continentClusterCodes[d.region]) {
+            case 1:
+              d.color = "#ffff00";
+              break;
+            case 2:
+              d.color = "#00ffff";
+              break;
+            case 3:
+              d.color = "#00ff00";
+              break;
+            case 4:
+              d.color = "#0000ff";
+              break;
+            case 5:
+              d.color = "#005500";
+              break;
+            case 6:
+              d.color = "#ff00ff";
+              break;
+            case 7:
+              d.color = "#550000";
+              break;
+            default:
+              d.color = "#000";
+          }
+          /* end debug */
 	  		}
-	  		d.radius = 5;
-		  	d.color = "#7711cb";
 	  	});
 
 	  	// for when countryExchangeData is implemented
@@ -223,20 +256,9 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
     			cluster: continentClusterCodes[feature.region],
     			region: feature.region
     		};
-    		// console.log(feature);
-    		// centroidItem.push(feature.radius);
-    		// centroidItem.push(feature.name);
     		return centroidItem;
   		});
 	  // console.log(centroidItems[0]);
-
-	  /* var force = d3.layout.force()
-	    .nodes(centroidItems)
-	    .size([width, height])
-	    .gravity(.02)
-	    .charge(0)
-	    .on("tick", tick)
-	    .start(); */
 
 	  var simulation = d3.forceSimulation(centroidItems)
 		  .velocityDecay(0.2)
