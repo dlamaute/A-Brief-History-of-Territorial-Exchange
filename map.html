@@ -136,7 +136,7 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
 			  radius: 0
 		};
 	}
-	// console.log(continentCentroids);
+	console.log(continentCentroids);
 
   /* for debugging continent centroid locations */
   var ccs = [];
@@ -299,7 +299,7 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
     .attr("font-size", "10px")
     .attr("text-anchor", "middle");
 
-  console.log(centroidElements);
+  // console.log(centroidElements);
 
 }
 
@@ -309,7 +309,7 @@ function continentClicked(d) {
   active.classed("active", false);
   active = d3.select(this).classed("active", true);
 
-  console.log(d);
+  // console.log(d);
 
   var bounds = path.bounds(d),
       dx = bounds[1][0] - bounds[0][0],
@@ -319,8 +319,8 @@ function continentClicked(d) {
       scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / width, dy / height))),
       translate = [width / 2 - scale * x, height / 2 - scale * y];
 
-  console.log(path.bounds(d));
-  console.log(bounds);
+  // console.log(path.bounds(d));
+  // console.log(bounds);
 
   svg.transition()
       .duration(750)
@@ -463,25 +463,30 @@ function tick(e) {
 
 // Move d to be adjacent to the cluster node.
 function cluster(alpha) {
-  return function(d) {
+  // return function(d) {
     // if (cluster === d) return;
-  console.log(centroidItems);
-  // centroidItems.forEach( function(d) {
-  	console.log(d);
-  	console.log(continentCentroids["North America"]);
-    var cluster = continentCentroids[d.region];
-    var x = d.x - cluster.x,
-        y = d.y - cluster.y,
-        l = Math.sqrt(x * x + y * y),
-        r = d.radius + cluster.radius;
-    if (l != r) {
-      l = (l - r) / l * alpha;
-      d.x -= x *= l;
-      d.y -= y *= l;
-      cluster.x += x;
-      cluster.y += y;
+  // console.log(centroidItems);
+  centroidItems.forEach(function(d) {
+  	// console.log(d);
+  	// console.log(continentCentroids[d.region]);
+    if (d.region) {
+      var cluster = continentCentroids[d.region];
+      if (d.name == "Latvia") {
+        console.log(cluster);
+      }
+      var x = d.x - cluster.x,
+          y = d.y - cluster.y,
+          l = Math.sqrt(x * x + y * y),
+          r = d.radius + cluster.radius;
+      if (l != r) {
+        l = (l - r) / l * alpha;
+        d.x -= x *= l;
+        d.y -= y *= l;
+        cluster.x += x;
+        cluster.y += y;
+      }
     }
-  };
+  });
 }
 
 function collide(alpha) {
