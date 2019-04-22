@@ -35,6 +35,12 @@
   cursor: pointer;
 }
 
+.contCentroid {
+  stroke: #000;
+  stroke-width: 0.1;
+  cursor: pointer;
+}
+
 .hidden {
   display: none;
 }
@@ -50,7 +56,7 @@
 <script>
 
 var width = 960,
-    height = 500,
+    height = 700,
     padding = 1.5,
     clusterPadding = 6,
     maxRadius = 12, // this should actually vary with the current node options
@@ -108,91 +114,95 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
 
 	// set up continents
 	var continent_gs = base_g.append("g")
-          .attr("class", "feature continent")
-          .selectAll(".feature")
-          .data(continentsData)
-          .enter()
-          .append("path")
-          .attr("name", function(d) {return d.properties.continent;})
-          // .attr("id", function(d) { return d.id;})
-          .on('click', continentClicked)
-          // .on("mousemove", showTooltip)
-          // .on("mouseout",  function(d,i) {
-          //    tooltip.classed("hidden", true);
-          // })
-          .attr("d", path);
+    .attr("class", "feature continent")
+    .selectAll(".feature")
+    .data(continentsData)
+    .enter()
+    .append("path")
+    .attr("name", function(d) {return d.properties.continent;})
+    // .attr("id", function(d) { return d.id;})
+    .on('click', continentClicked)
+    // .on("mousemove", showTooltip)
+    // .on("mouseout",  function(d,i) {
+    //    tooltip.classed("hidden", true);
+    // })
+    .attr("d", path);
 
-    for (var c of continentsData) {
-    	var centroid = path.centroid(c);
+  for (var c of continentsData) {
+    var centroid = path.centroid(c);
 		continentCentroids[c.properties.continent] = {
-			x: path.centroid(c)[0],
-			y: path.centroid(c)[1],
-			radius: 0
+			  x: path.centroid(c)[0],
+			  y: path.centroid(c)[1],
+			  radius: 0
 		};
 	}
-	console.log(continentCentroids);
+	// console.log(continentCentroids);
 
   /* for debugging continent centroid locations */
+  var ccs = [];
+  for (cname in continentCentroids) {
+    ccs.push(continentCentroids[cname]);
+  }
+
   var contCentroidElements = base_g.selectAll(".contCentroid")
-      .data(continentCentroids)
-      .enter()
-      .append("g");
+    .data(ccs)
+    .enter()
+    .append("g");
 
-  contCentroidElements.append("circle")
-      .attr("class", "contCentroid")
-      .attr("fill", function(d) { return "#ff0000"; })
-      .attr("r", function(d) { return 10; })
-      .attr("cx", function(d) { return d.x; })
-      .attr("cy", function(d) { return d.y; });
-
+  var contCentroids = contCentroidElements.append("circle")
+    .attr("class", "contCentroid")
+    .attr("fill", function(d) { return "#ff0000"; })
+    .attr("r", function(d) { return 10; })
+    .attr("cx", function(d) { return d.x; })
+    .attr("cy", function(d) { return d.y; });
   /* end debug */
 
-    // filter exchange here to get countryExchangeData
-    var countryExchangeData = {} // incorporate three-letter code
+  // filter exchange here to get countryExchangeData
+  var countryExchangeData = {} // incorporate three-letter code
 
-    // set up countries
-    countriesData.filter(function(d) {
-	  	return names.some(function(n) {
-	  		if (parseInt(d.id) == parseInt(n.id)) {
-	  			d.name = n.name;
-	  			d.nameCode = n.alpha_3;
-	  			if (n.region != "Americas") {
-	  				d.region = n.region;
-	  			} else if (n.subregion == "South America") { 
-	  				d.region = n.subregion; 
-	  			} else {
-	  				d.region = "North America";
-	  			}
-          d.radius = 5; // irl to be determined by exchange data
-          /* debug for identifying separate clusters */
-          switch(continentClusterCodes[d.region]) {
-            case 1:
-              d.color = "#ffff00";
-              break;
-            case 2:
-              d.color = "#00ffff";
-              break;
-            case 3:
-              d.color = "#00ff00";
-              break;
-            case 4:
-              d.color = "#0000ff";
-              break;
-            case 5:
-              d.color = "#005500";
-              break;
-            case 6:
-              d.color = "#ff00ff";
-              break;
-            case 7:
-              d.color = "#550000";
-              break;
-            default:
-              d.color = "#000";
-          }
-          /* end debug */
-	  		}
-	  	});
+  // set up countries
+  countriesData.filter(function(d) {
+  	return names.some(function(n) {
+  		if (parseInt(d.id) == parseInt(n.id)) {
+  			d.name = n.name;
+  			d.nameCode = n.alpha_3;
+  			if (n.region != "Americas") {
+  				d.region = n.region;
+  			} else if (n.subregion == "South America") { 
+  				d.region = n.subregion; 
+  			} else {
+  				d.region = "North America";
+  			}
+        d.radius = 5; // irl to be determined by exchange data
+        /* debug for identifying separate clusters */
+        switch(continentClusterCodes[d.region]) {
+          case 1:
+            d.color = "#ffff00";
+            break;
+          case 2:
+            d.color = "#00ffff";
+            break;
+          case 3:
+            d.color = "#00ff00";
+            break;
+          case 4:
+            d.color = "#0000ff";
+            break;
+          case 5:
+            d.color = "#007700";
+            break;
+          case 6:
+            d.color = "#ff00ff";
+            break;
+          case 7:
+            d.color = "#770000";
+            break;
+          default:
+            d.color = "#000";
+        }
+        /* end debug */
+  		}
+  	});
 
 	  	// for when countryExchangeData is implemented
 	  	/* countryExchangeData.some(function(e) {
@@ -204,8 +214,8 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
 	});
 
 
-    var continents = base_g.selectAll(".continent");
-    var countries = base_g.selectAll(".country");
+  var continents = base_g.selectAll(".continent");
+  var countries = base_g.selectAll(".country");  // remove
 
 	/* base_g.selectAll("path")
       .data(continents)
@@ -246,48 +256,50 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
 	      .attr("class", "mesh")
 	      .attr("d", path); */
 
-	   centroidItems = countriesData.map(function(feature) {
-    		var centroidItem = {
-    			x: path.centroid(feature)[0],
-    			y: path.centroid(feature)[1],
-    			radius: feature.radius,
-    			name: feature.name,
-    			color: feature.color,
-    			cluster: continentClusterCodes[feature.region],
-    			region: feature.region
-    		};
-    		return centroidItem;
-  		});
-	  // console.log(centroidItems[0]);
+   centroidItems = countriesData.map(function(feature) {
+  		var centroidItem = {
+  			x: path.centroid(feature)[0],
+  			y: path.centroid(feature)[1],
+  			radius: feature.radius,
+  			name: feature.name,
+  			color: feature.color,
+  			cluster: continentClusterCodes[feature.region],
+  			region: feature.region
+  		};
+  		return centroidItem;
+		});
+  // console.log(centroidItems[0]);
 
-	  var simulation = d3.forceSimulation(centroidItems)
-		  .velocityDecay(0.2)
-	      // .force("x", d3.forceX().strength(.0005))
-	      // .force("y", d3.forceY().strength(.0005))
-	      .force("collide", collide)
-	      .force("cluster", cluster)
-	      .on("tick", tick);
+  var simulation = d3.forceSimulation(centroidItems)
+	  // .velocityDecay(0.2)
+    // .force("x", d3.forceX().strength(.0005))
+    // .force("y", d3.forceY().strength(.0005))
+    .force("collide", collide)
+    .force("cluster", cluster)
+    .on("tick", tick);
 
-	  var centroidElements = base_g.selectAll(".centroid")
-	  	.data(centroidItems)
-	  	.enter()
-	  	.append("g");
+  var centroidElements = base_g.selectAll(".centroid")
+  	.data(centroidItems)
+  	.enter()
+  	.append("g");
 
-	  var centroids = centroidElements.append("circle")
-	  	.attr("class", "centroid")
-	  	.attr("fill", function(d) { return d.color; })
-	  	.attr("r", function(d) { return d.radius; })
-	  	.attr("cx", function(d) { return d.x; })
-        .attr("cy", function(d) { return d.y; })
-        // .call(force.drag)
-        .on("click", countryClicked);
+  var centroids = centroidElements.append("circle")
+  	.attr("class", "centroid")
+  	.attr("fill", function(d) { return d.color; })
+  	.attr("r", function(d) { return d.radius; })
+  	.attr("cx", function(d) { return d.x; })
+    .attr("cy", function(d) { return d.y; })
+    // .call(force.drag)
+    .on("click", countryClicked);
 
-      centroidElements.append("text")
-      	.text(function(d) { return d.name; })
-      	.attr("x", function(d) { return d.x; })
-        .attr("y", function(d) { return d.y; })
-        .attr("font-size", "10px")
-        .attr("text-anchor", "middle");
+  centroidElements.append("text")
+  	.text(function(d) { return d.name; })
+  	.attr("x", function(d) { return d.x; })
+    .attr("y", function(d) { return d.y; })
+    .attr("font-size", "10px")
+    .attr("text-anchor", "middle");
+
+  console.log(centroidElements);
 
 }
 
