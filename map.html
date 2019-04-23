@@ -7,6 +7,11 @@
   pointer-events: all; 
 }
 
+.selectLayer {
+  fill-opacity: 0.0;
+  cursor: pointer;
+}
+
 .feature {
   fill: #000;
   cursor: pointer;
@@ -51,6 +56,8 @@
   pointer-events: none;     
 }
 
+.sankey {}
+
 </style>
 
 <body>
@@ -60,6 +67,8 @@
 <script src="https://d3js.org/topojson.v2.min.js"></script>
 <script src="https://d3js.org/d3-queue.v3.min.js"></script>
 <script>
+
+var body = d3.select("body");
 
 var width = 960,
     height = 700,
@@ -76,13 +85,14 @@ var zoom = d3.zoom().on("zoom", zoomed);
 var path = d3.geoPath().projection(projection);
 
 var countryMode = false;  // delete?
+var simulation;
 
 // Define the div for the tooltip
-let tooltipDiv = d3.select("body").append("div") 
+let tooltipDiv = body.append("div") 
     .attr("class", "tooltip")       
     .style("opacity", 0);
 
-var svg = d3.select("body").append("svg")
+var svg = body.append("svg")
     .attr("width", width)
     .attr("height", height)
     .on("click", stopped, true);
@@ -93,7 +103,11 @@ svg.append("rect")
     .attr("height", height)
     .on("click", reset);
 
+var sankey = body.append("div")
+  .attr("class", "sankey")
+
 var base_g = svg.append("g");
+var top_g = svg.append("g");
 
 var continentClusterCodes = {
 	"Africa": 1,
@@ -131,7 +145,12 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
     .enter()
     .append("path")
     .attr("name", function(d) {return d.properties.continent;})
-    .on('click', continentClicked)
+    .on("click", continentClicked)
+    .attr("d", path);
+
+  base_g.append("path")
+    .datum(topojson.mesh(worldContinents, worldContinents.objects.continent, function(a, b) { return a !== b; }))
+    .attr("class", "mesh")
     .attr("d", path);
 
   for (var c of continentsData) {
@@ -142,7 +161,6 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
 			  radius: 0
 		};
 	}
-	console.log(continentCentroids);
 
   // filter exchange here to get countryExchangeData
   var countryExchangeData = {} // incorporate three-letter code
@@ -160,7 +178,7 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
   			} else {
   				d.region = "North America";
   			}
-        d.radius = Math.floor(Math.random()*10); // irl to be determined by exchange data
+        d.radius = 5; //Math.floor(Math.random()*10); // irl to be determined by exchange data
         /* debug for identifying separate clusters */
         switch(continentClusterCodes[d.region]) {
           case 1:
@@ -185,7 +203,7 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
             d.color = "#770000";
             break;
           default:
-            d.color = "#000";
+            d.color = "#ccc";
         }
         /* end debug */
   		}
@@ -204,19 +222,6 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
   var continents = base_g.selectAll(".continent");
   var countries = base_g.selectAll(".country");  // remove
 
-	/* base_g.selectAll("path")
-      .data(continents)
-      .enter()
-      .append("path")
-      .attr("d", path)
-      .attr("class", "feature continent")
-      .on("click", continentClicked);
-
-  	base_g.append("path")
-      .datum(topojson.mesh(worldContinents, worldContinents.objects.continent, function(a, b) { return a !== b; }))
-      .attr("class", "mesh")
-      .attr("d", path); */
-
   centroidItems = countriesData.map(function(feature) {
 		var centroidItem = {
 			x: path.centroid(feature)[0],
@@ -230,7 +235,7 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
 		return centroidItem;
   });
 
-  var simulation = d3.forceSimulation(centroidItems)
+  simulation = d3.forceSimulation(centroidItems)
 	  .velocityDecay(0.1)
     .force('x', d3.forceX()
       .strength(0.006)
@@ -255,6 +260,7 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
       })
     )
     .force("collide", collide)
+    .stop()
     .on("tick", tick);
 
   var centroidElements = base_g.selectAll(".centroid")
@@ -283,6 +289,12 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
             .style("opacity", 0); 
     });
 
+  top_g.append("rect")
+    .attr("class", "selectLayer")
+    .attr("width", width)
+    .attr("height", height)
+    .on("click", startSimulation);
+
 }
 
 // When a continent is clicked, zoom in and show the country level map
@@ -301,12 +313,11 @@ function continentClicked(d) {
       scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / width, dy / height))),
       translate = [width / 2 - scale * x, height / 2 - scale * y];
   } else if (d.properties.continent == "Asia") {
-    scale = 2
-    translate = [-1000, 0];
+    var scale = 2,
+      translate = [-1000, 0];
   } else {
-    var bounds = path.bounds(d),
-    scale = 2
-    translate = [-1000, -400];
+    var scale = 2,
+      translate = [-1000, -400];
   }
 
   svg.transition()
@@ -375,9 +386,6 @@ function continentClicked(d) {
 }
 
 function countryClicked(d) {
-	/* if (active.node() === this) return reset();
-  	active.classed("active", false);
-  	active = d3.select(this).classed("active", true); */
 	console.log("country clicked");
 	console.log(d);
 }
@@ -406,6 +414,13 @@ function zoomed() {
 // also stop propagation so we don’t click-to-zoom.
 function stopped() {
   if (d3.event.defaultPrevented) d3.event.stopPropagation();
+}
+
+function startSimulation() {
+  if (typeof simulation !== 'undefined') {
+    top_g.selectAll(".selectLayer").remove();
+    simulation.restart();
+  }
 }
 
 function tick(e) {
