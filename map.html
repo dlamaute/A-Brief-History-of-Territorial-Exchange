@@ -8,12 +8,8 @@
 }
 
 .feature {
-  fill: #ccc;
+  fill: #000;
   cursor: pointer;
-}
-
-.feature.active {
-  fill: orange;
 }
 
 .country {
@@ -29,7 +25,6 @@
 }
 
 .centroid {
-  /* fill: #ab1bab; */
   stroke: #000;
   stroke-width: 0.1;
   cursor: pointer;
@@ -47,8 +42,7 @@
 
 .tooltip { 
   position: absolute;     
-  text-align: center;     
-  /* width: 150px; */         
+  text-align: center;       
   padding: 2px 5px;       
   font: 12px sans-serif;    
   background: lightgrey; 
@@ -71,7 +65,7 @@ var width = 960,
     height = 700,
     padding = 1.5,
     clusterPadding = 6,
-    maxRadius = 20, // this should actually vary with the current node options
+    maxRadius = height*0.1, // this should actually vary with the current node options
     active = d3.select(null);
 
 var projection = d3.geoMercator()
@@ -117,11 +111,11 @@ var continentCentroids = {};
 svg.call(zoom); // delete this line to disable free zooming
 
 d3.queue()
-  	.defer(d3.json, "world-continents.json")
-  	.defer(d3.json, "world-countries.json")
-  	.defer(d3.csv, "world_country_names.csv")
-  	.defer(d3.csv, "wrangle.csv")
-  	.await(setup);
+	.defer(d3.json, "world-continents.json")
+	.defer(d3.json, "world-countries.json")
+	.defer(d3.csv, "world_country_names.csv")
+	.defer(d3.csv, "wrangle.csv")
+	.await(setup);
 
 function setup(error, worldContinents, worldCountries, names, exchange) {
 	if (error) throw error;
@@ -137,12 +131,7 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
     .enter()
     .append("path")
     .attr("name", function(d) {return d.properties.continent;})
-    // .attr("id", function(d) { return d.id;})
     .on('click', continentClicked)
-    // .on("mousemove", showTooltip)
-    // .on("mouseout",  function(d,i) {
-    //    tooltip.attr("class", "hidden");
-    // })
     .attr("d", path);
 
   for (var c of continentsData) {
@@ -154,25 +143,6 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
 		};
 	}
 	console.log(continentCentroids);
-
-  /* for debugging continent centroid locations
-  var ccs = [];
-  for (cname in continentCentroids) {
-    ccs.push(continentCentroids[cname]);
-  }
-
-  var contCentroidElements = base_g.selectAll(".contCentroid")
-    .data(ccs)
-    .enter()
-    .append("g");
-
-  var contCentroids = contCentroidElements.append("circle")
-    .attr("class", "contCentroid")
-    .attr("fill", function(d) { return "#ff0000"; })
-    .attr("r", function(d) { return 10; })
-    .attr("cx", function(d) { return d.x; })
-    .attr("cy", function(d) { return d.y; });
-  /* end debug */
 
   // filter exchange here to get countryExchangeData
   var countryExchangeData = {} // incorporate three-letter code
@@ -247,46 +217,18 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
       .attr("class", "mesh")
       .attr("d", path); */
 
-    // console.log(continents[0]);
-    // console.log(path.bounds(base_g.selectAll("path")[0]));
-
-    /* var countries = topojson.feature(worldCountries, worldCountries.objects.countries).features;
-
-    console.log(countries[0]);
-
-	countriesData.filter(function(d) {
-	  	return names.some(function(n) {
-	  		if (d.id == n.id) return d.name = n.name;
-	  	})
-	});
-
-	  base_g.selectAll("path")
-	      .data(countries)
-	      .enter()
-	      .append("path")
-	      .attr("d", path)
-	      .attr("class", "country")
-	      .on("click", countryClicked);
-
-	  base_g.append("path")
-	      .datum(topojson.mesh(worldCountries, worldCountries.objects.countries, function(a, b) { return a !== b; }))
-	      .attr("class", "mesh")
-	      .attr("d", path); */
-
-   centroidItems = countriesData.map(function(feature) {
-  		var centroidItem = {
-  			x: path.centroid(feature)[0],
-  			y: path.centroid(feature)[1],
-  			radius: feature.radius,
-  			name: feature.name,
-  			color: feature.color,
-  			cluster: continentClusterCodes[feature.region],
-  			region: feature.region
-  		};
-  		return centroidItem;
-		});
-  // console.log(centroidItems[0]);
-
+  centroidItems = countriesData.map(function(feature) {
+		var centroidItem = {
+			x: path.centroid(feature)[0],
+			y: path.centroid(feature)[1],
+			radius: feature.radius,
+			name: feature.name,
+			color: feature.color,
+			cluster: continentClusterCodes[feature.region],
+			region: feature.region
+		};
+		return centroidItem;
+  });
 
   var simulation = d3.forceSimulation(centroidItems)
 	  .velocityDecay(0.1)
@@ -327,14 +269,10 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
   	.attr("cx", function(d) { return d.x; })
     .attr("cy", function(d) { return d.y; })
     .on("click", countryClicked)
-    // .on("mouseover", showTooltip)
-    // .on("mouseout",  function(d,i) {
-    //    tooltip.attr("class", "hidden");
-    // })
     .on("mouseover", function(d) {
         tooltipDiv.transition()    
             .duration(200)    
-            .style("opacity", .9);    
+            .style("opacity", 1);    
         tooltipDiv.html(d.name)  
             .style("left", (d3.event.pageX) + "px")   
             .style("top", (d3.event.pageY - 28) + "px");  
@@ -345,15 +283,6 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
             .style("opacity", 0); 
     });
 
-  /*centroidElements.append("text")
-  	.text(function(d) { return d.name; })
-  	.attr("x", function(d) { return d.x; })
-    .attr("y", function(d) { return d.y; })
-    .attr("font-size", "10px")
-    .attr("text-anchor", "middle"); */
-
-  // console.log(centroidElements);
-
 }
 
 // When a continent is clicked, zoom in and show the country level map
@@ -362,16 +291,23 @@ function continentClicked(d) {
   active.classed("active", false);
   active = d3.select(this).classed("active", true);
 
-  var bounds = path.bounds(d),
+  console.log(d);
+  if (d.properties.continent != "Asia" && d.properties.continent != "Oceania") {
+    var bounds = path.bounds(d),
       dx = bounds[1][0] - bounds[0][0],
       dy = bounds[1][1] - bounds[0][1],
       x = (bounds[0][0] + bounds[1][0]) / 2,
       y = (bounds[0][1] + bounds[1][1]) / 2,
       scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx / width, dy / height))),
       translate = [width / 2 - scale * x, height / 2 - scale * y];
-
-  // console.log(path.bounds(d));
-  // console.log(bounds);
+  } else if (d.properties.continent == "Asia") {
+    scale = 2
+    translate = [-1000, 0];
+  } else {
+    var bounds = path.bounds(d),
+    scale = 2
+    translate = [-1000, -400];
+  }
 
   svg.transition()
       .duration(750)
@@ -455,8 +391,6 @@ function reset() {
       .call( zoom.transform, d3.zoomIdentity ); 
 
   if (countryMode) {
-  	// base_g.selectAll(".country").exit().remove();
-  	// base_g.selectAll("path").exit().remove();
   	countryMode = false;
   	console.log(base_g.selectAll(".country"));
   	console.log(base_g.selectAll("path"));
@@ -466,35 +400,6 @@ function reset() {
 function zoomed() {
   base_g.style("stroke-width", 1.5 / d3.event.transform.k + "px");
   base_g.attr("transform", d3.event.transform); 
-
-  var continents = base_g.selectAll(".continent");
-  var countries = base_g.selectAll(".country");
-
-  var s = d3.event.scale;
-
-  if(s > 1.5) {
-		countries.attr("class", "feature country");
-		continents.attr("class", "feature continent hidden");
-  		/*
-        states
-          .classed('hidden', false);
-        usa
-          .classed('hidden', true);
-        canada
-          .classed('hidden', true);
-        */
-  } else {
-    countries.attr("class", "feature country hidden");
-		continents.attr("class", "feature continent");
-      /*
-      states
-        .classed('hidden', true);
-      usa
-        .classed('hidden', false);
-      canada
-        .classed('hidden', false);
-     */
-  }
 }
 
 // If the drag behavior prevents the default click,
@@ -507,24 +412,6 @@ function tick(e) {
  	base_g.selectAll(".centroid")
       .attr("cx", function(d) { return d.x; })
       .attr("cy", function(d) { return d.y; });
-}
-
-// Move d to be adjacent to the cluster node.
-function cluster(alpha) {
-  centroidItems.forEach(function(d) {
-    if (d.region) {
-      var cluster = continentCentroids[d.region];
-      var x = d.x - cluster.x,
-          y = d.y - cluster.y,
-          l = Math.sqrt(x * x + y * y),
-          r = d.radius + cluster.radius;
-      if (l != r) {
-        l = (l - r) / l * alpha;
-        d.x -= x *= l;
-        d.y -= y *= l;
-      }
-    }
-  });
 }
 
 function collide(alpha) {	
