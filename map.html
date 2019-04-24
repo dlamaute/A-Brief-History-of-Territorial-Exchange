@@ -8,7 +8,8 @@
 }
 
 .selectLayer {
-  fill-opacity: 0.0;
+  fill: #ccc;
+  fill-opacity: 0.5;
   cursor: pointer;
 }
 
@@ -289,12 +290,19 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
             .style("opacity", 0); 
     });
 
-  top_g.append("rect")
+  var selectLayer = top_g.append("rect")
     .attr("class", "selectLayer")
     .attr("width", width)
     .attr("height", height)
     .on("click", startSimulation);
 
+  selectLayer.append("text")
+    .text("Click to Start")
+    .attr("font-size", "128px")
+    .attr("color", "black")
+    .attr("x", width/2)
+    .attr("y", height/2)
+    .attr("text-anchor", "middle");
 }
 
 // When a continent is clicked, zoom in and show the country level map
