@@ -60,45 +60,61 @@
 .sankey {}
 
 .header{
-  display: inline-block;
-  position: absolute;
+  display: block;
+  /* position: absolute; */
   left: 2%;
   /* width:550px;
   height:0px; */
   text-align: center;
-  top: 5%;
+  /* top: 5%; */
+  margin-top: 50px;
   /* z-index: 2; */
 }
 
 h1 {
   font-size: 50px;
-  z-index: 2;
+  /* z-index: 2; */
 }
 
 #heading{
-  padding-top: 5%;
+  /* padding-top: 5%; */
   font-size: 25px;
+  display: inline-block;
 }
 
 #yrs{
-  padding-top: 5%;
+  /* padding-top: 5%; */
   font-size: 25px;
+  display: block;
+}
+
+#button-row {
+  margin-top: 50px;
+  margin-bottom: 30px;
+  margin-left: 5%;
+  display: block;
 }
 
 #story-buttons {
-  position: absolute;
-  left: 41%;
-  top: 25px;
+  /* position: absolute; */
+  /* left: 41%; */
+  /* margin-left: 25px; */
+  /* top: 25px */
  /*  z-index: 2; */
  display: inline-block;
 }
 
 #other-story-buttons {
-  position: absolute;
-  left: 41%;
-  top: 75px;
+  /* position: absolute; */
+  /* left: 41%; */
+  margin-left: 20px;
+  /* top: 75px; */
   /* z-index: 2; */
   display: inline-block;
+}
+
+#exchanges {
+  margin-left: 20px;
 }
 
 .clicked {
@@ -106,15 +122,17 @@ h1 {
 }
 
 .right-buttons {
-  position: absolute;
+  /* position: absolute; */
   left: 80%;
   top: 25px;
-  z-index: 2;
+  display: inline-block;
+  /* z-index: 2; */
   text-align: center;
 }
 
 #countries {
-  padding-top: 2%;
+  /* padding-top: 2%; */
+  display: inline-block;
 }
 
 #country {
@@ -128,6 +146,13 @@ h1 {
   border-radius: 12px;
   width: 150px;
 }
+
+#map-div {
+  display: block;
+  margin-left: 5%;
+  margin-right: 5%;
+  width: 90%;
+}
   
 .base-svg {
  display: block;
@@ -137,7 +162,7 @@ h1 {
  text-anchor: "middle";
 }
   
-  .area {
+.area {
   fill: steelblue;
   clip-path: url(#clip);
 }
@@ -147,21 +172,27 @@ h1 {
 <body>
 <div class="header">
   <h1>A Brief History of Territorial Exchange</h1>
-  <p id="yrs"> - </p>
-  <p id="heading"> Search by Country: </p>
+  <div id="yrs"> - </div>
+  <div id="heading"> Search by Country: </div>
   <div id="countries"></div>
 </div>
 
-<div id="story-buttons" class="btn-group" role="group" aria-label="people">
-    <button type="button" id="button1" class="btn btn-default" onClick="updateData(false);">Land</button>
-    <button type="button" id="button2" class="btn btn-default" onClick="updateData(true);">People</button>
+<div id="button-row">
+  <div id="story-buttons" class="btn-group" role="group" aria-label="people">
+      <button type="button" id="button1" class="btn btn-default" onClick="updateData(false);">Land</button>
+      <button type="button" id="button2" class="btn btn-default" onClick="updateData(true);">People</button>
+  </div>
+
+  <div id="other-story-buttons" class="btn-group" role="group" aria-label="people">
+    <button type="button" id="button3" class="btn btn-default" onClick="updateGains(0);">Gains</button>
+    <button type="button" id="button4" class="btn btn-default" onClick="updateGains(1);">Losses</button>
+    <button type="button" id="button5" class="btn btn-default" onClick="updateGains(2);">Net</button>
+  </div>
+
+  <div class="right-buttons" id="exchanges"></div>
 </div>
 
-<div id="other-story-buttons" class="btn-group" role="group" aria-label="people">
-  <button type="button" id="button3" class="btn btn-default" onClick="updateGains(0);">Gains</button>
-  <button type="button" id="button4" class="btn btn-default" onClick="updateGains(1);">Losses</button>
-  <button type="button" id="button5" class="btn btn-default" onClick="updateGains(2);">Net</button>
-</div>
+<div id="map-div"></div>
 
 </body>
 
@@ -177,13 +208,22 @@ h1 {
 <script>
 
 var body = d3.select("body");
+var mapDiv = d3.select("#map-div");
 
 var width = 960,
-    height = 700,
+    height = 500,
     padding = 1.5,
     clusterPadding = 6,
     maxRadius = height*0.1, // this should actually vary with the current node options
     active = d3.select(null);
+
+var lower = 1815;
+var upper = 2016;
+var isPeople = false;
+var exchangeType = null;
+var gains = 0;
+
+body.attr("width", (width + 100).toString() + "px").attr("height", (height + 50).toString() + "px");
 
 var projection = d3.geoMercator()
     .scale(150)
@@ -196,13 +236,12 @@ var countryMode = false;  // delete?
 var simulation;
 
 
-
 // Define the div for the tooltip
 let tooltipDiv = body.append("div") 
     .attr("class", "tooltip")       
     .style("opacity", 0);
 
-var svg = body.append("svg")
+var svg = mapDiv.append("svg")
     .attr("class", "base-svg")
     .attr("width", width)
     .attr("height", height)
@@ -242,8 +281,33 @@ d3.queue()
 	.defer(d3.csv, "wrangle.csv")
 	.await(setup);
 
-function setup(error, worldContinents, worldCountries, names, exchange) {
+function setup(error, worldContinents, worldCountries, names, exchangeData) {
 	if (error) throw error;
+
+  var countrySelect = d3.select("#countries")
+        .append("div")
+        .append("select")
+        .attr("class", "custom-select")
+        .attr("id", "country");
+
+      countrySelect.selectAll("option")
+        .data(d3.map(exchangeData, function(d){return d["gainer"];}).keys().sort())
+        .enter()
+        .append("option")
+        .text(function (d) { return d; });
+
+  var exchangeSelect = d3.select("#exchanges")
+        .append("div")
+        .append("select")
+        .on('change', onExchangeChange)
+        .attr("class", "custom-select")
+        .attr("id", "country")
+  
+      exchangeSelect.selectAll("option")
+        .data(d3.map(exchangeData, function(d){return d["procedure"];}).keys().sort())
+        .enter()
+        .append("option")
+        .text(function (d) { return d; });
 
 	var continentsData = topojson.feature(worldContinents, worldContinents.objects.continent).features;
 	var countriesData = topojson.feature(worldCountries, worldCountries.objects.countries).features;
@@ -289,7 +353,7 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
   			} else {
   				d.region = "North America";
   			}
-        d.radius = 5; //Math.floor(Math.random()*10); // irl to be determined by exchange data
+        d.radius = Math.floor(Math.random()*10); // irl to be determined by exchange data
         /* debug for identifying separate clusters */
         switch(continentClusterCodes[d.region]) {
           case 1:
@@ -415,6 +479,20 @@ function setup(error, worldContinents, worldCountries, names, exchange) {
     .attr("text-anchor", "middle");
 }
 
+function onExchangeChange() {
+    var selected = d3.select(this).property("value");
+    exchangeType = selected=="All" ? null : selected;
+    updateBubble(lower, upper, isPeople, exchangeType, gains);
+    updateTimeline(exchangeType);
+};
+
+function updateYearsBanner(lower, upper) {
+  var select = d3.select("#yrs")
+          .text(lower + " - " + upper);
+}
+
+updateYearsBanner(lower, upper);
+
 // When a continent is clicked, zoom in and show the country level map
 function continentClicked(d) {
   if (active.node() === this) return reset();
@@ -441,66 +519,6 @@ function continentClicked(d) {
   svg.transition()
       .duration(750)
       .call( zoom.transform, d3.zoomIdentity.translate(translate[0],translate[1]).scale(scale) );
-
-  // base_g.selectAll(".country")
-
-  /* d3.queue()
-  	.defer(d3.json, "https://unpkg.com/world-atlas@1/world/50m.json")
-  	.defer(d3.csv, "final_data/world_country_names.csv")
-  	.await(update);
-
-  function update(error, world, names) {
-	  if (error) throw error;
-
-	  var countries = topojson.feature(world, world.objects.countries).features; 
-
-	  var namedCountries = countries.filter(function(d) {
-	  	return names.some(function(n) {
-	  		if (d.id == n.id) return d.name = n.name;
-	  	})
-	  });
-
-	  /* base_g.selectAll("path")
-	      .data(countries)
-	      .enter()
-	      .append("path")
-	      .attr("d", path)
-	      .attr("class", "country")
-	      .on("click", countryClicked);
-
-	  base_g.append("path")
-	      .datum(topojson.mesh(world, world.objects.countries, function(a, b) { return a !== b; }))
-	      .attr("class", "mesh")
-	      .attr("d", path);
-
-	  var centroidItems = countries.map(function(feature) {
-    		var centroidItem = path.centroid(feature);
-    		centroidItem.push(feature.name);
-    		return centroidItem;
-  		});
-	  console.log(centroidItems[0]);
-
-	  var centroidElements = base_g.selectAll(".centroid")
-	  	.data(centroidItems)
-	  	.enter()
-	  	.append("g");
-
-	  centroidElements.append("circle")
-	  	.attr("class", "centroid")
-	  	.attr("r", 5)
-	  	.attr("cx", function(d) { return d[0]; })
-        .attr("cy", function(d) { return d[1]; })
-        .on("click", countryClicked);
-
-      centroidElements.append("text")
-      	.text(function(d) { return d[2]; })
-      	.attr("x", function(d) { return d[0]; })
-        .attr("y", function(d) { return d[1]; })
-        .attr("font-size", "10px")
-        .attr("text-anchor", "middle");
-
-	  countryMode = true;
-	} */
 }
 
 function countryClicked(d) {
