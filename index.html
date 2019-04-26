@@ -500,25 +500,25 @@ d3.csv("wrangle.csv",
 									alreadyPresentLoss = true;	
 								}
 							}
-							if (alreadyPresentGain == false && alreadyPresentLoss == false) {
+							if (alreadyPresentGain == false) {
 								data2[i]["entity"] = data2[i]["gainer"];
 								data3.push(data2[i]);
+							}
+							else {
+								data3[index2save]["land"] += data2[i]["land"];
+								data3[index2save]["people"] += data2[i]["people"];
+							}
+							if (alreadyPresentLoss == false) {
 								newdata = {};
-								newdata["exchange"] = -1 * data2[i]["exchange"];
+								newdata["exchange"] = data2[i]["exchange"];
 								newdata["land"] = -1 * data2[i]["land"];
 								newdata["people"] = -1 * data2[i]["people"];
 								newdata["entity"] = data2[i]["loser"];
 								data3.push(newdata);
 							}
 							else {
-								if (alreadyPresentGain == true ) {
-									data3[index2save]["land"] += data2[i]["land"];
-									data3[index2save]["people"] += data2[i]["people"];
-								}
-								else {
 									data3[index2save1]["land"] -= data2[i]["land"];
 									data3[index2save1]["people"] -= data2[i]["people"];
-								}
 							}
 						};
 
