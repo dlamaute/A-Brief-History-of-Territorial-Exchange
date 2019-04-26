@@ -386,7 +386,7 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
 
 	  	// for when countryExchangeData is implemented
 	  	/* countryExchangeData.some(function(e) {
-	  		if (d.nameCode = e.nameCode) {
+	  		if (d.nameCode == e.nameCode) {
 		  		d.radius = 5;
 		  		d.color = #ab1bab;
 		  	}
@@ -594,5 +594,296 @@ function collide(alpha) {
     });
   });
 }
+
+function updateTimeline(exchangeType) {
+
+  d3.csv("wrangle.csv", 
+    function(d) {
+      d.exchange = +d["procedure"];
+      d.land = +d["area"];
+      d.people = +d["pop"];
+      d.year = d["year"];
+      d.count = d["count"];
+
+      return d;
+    }, 
+    function(error, data) {
+      if (error) throw error;
+      
+      svg.selectAll(".focus").remove();
+      svg.selectAll(".context").remove();
+      
+      var x = d3.scaleLinear().range([0, width]),
+        y2 = d3.scaleLinear().range([height2, 0]);
+        
+      var yTicks = 6;
+      if (exchangeType=="Annexation") {
+        yTicks = 3;
+      }
+      if (exchangeType=="Conquest") {
+        yTicks = 4;
+      }
+      if (exchangeType=="Unification") {
+        yTicks = 6;
+      }
+
+      var xAxis = d3.axisBottom(x).ticks(20).tickFormat(d3.format(".4")),
+        yAxis2 = d3.axisLeft(y2).ticks(yTicks);
+
+      var brush = d3.brushX()
+        .extent([[0, 0], [width, height2]])
+        .on("brush end", brushed);
+        
+      var area2 = d3.area()
+        .curve(d3.curveStep)
+        .x(function(d) { return x(d["year"]/*.year*/); })
+        .y0(height2)
+        .y1(function(d) { return y2(d["count"]/*.count*/); });
+        
+      var focus = svg.append("g")
+        .attr("class", "focus")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        
+      var context = svg.append("g")
+        .attr("class", "context")
+        .attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
+
+      
+      data4timeline = []
+      for (i=1816; i<=2018; i++) {
+        year_string = "" + i;
+        data4timeline.push( {"year": year_string, "count": 0, "pop": 0, "area": 0} );
+      }
+      
+      for (i=0; i<data.length; i++) {
+        if (exchangeType=="All" || exchangeType==null || data[i]["procedure"]==exchangeType) {
+          thisYear = data[i]["year"]
+          for (j=1816; j<=2018; j++) {
+            if (thisYear == j) {
+              data4timeline[j-1816]["count"] += 1;
+            }
+          }
+        }
+      }
+      
+      // Set the timeline line graph domain
+      x.domain(d3.extent(data4timeline, function(d) { return d["year"]/*.year*/; }));
+      y2.domain([0, d3.max(data4timeline, function(d) { return d["count"]/*.count*/; })]);
+
+      // Draw the y-axis
+      focus.append("g")
+         .attr("class", "axis axis--y")
+         .attr("transform", "translate(0," + (height + 10) + ")")
+         .call(yAxis2);
+      
+      
+      // Draw the line graph given the data
+      context.append("path")
+          .datum(data4timeline)
+          .attr("class", "area")
+          .attr("d", area2);
+
+      // Draw the x-axis
+      context.append("g")
+          .attr("class", "axis axis--x")
+          .attr("transform", "translate(0," + height2 + ")")
+          .call(xAxis);
+
+      // Draw the brush
+      context.append("g")
+          .attr("class", "brush")
+          .call(brush)
+          .call(brush.move, x.range());
+    
+  });
+
+}
+
+/* here we go */
+function updateBubble(lower_bound, upper_bound, type, exchange, gains) {
+  d3.csv("wrangle.csv", 
+          function(d) {
+            d.exchange = d["procedure"];
+            d.land = +d["area"];
+            d.people = +d["pop"];
+            d.year = d["year"];
+            d.gainer = d["gainer"];
+            d.loser = d["loser"];
+
+            return d;
+          }, 
+          function(error, data) {
+            if (error) throw error;
+
+            svg.selectAll(".node").remove();
+
+            var color = d3.scaleOrdinal()
+                      .domain(data.map(function(d){ return d.year; }))
+                      .range(['#fbb4ae','#b3cde3','#ccebc5','#decbe4','#fed9a6', '#ffe9a8','#b9bfe3','#fddaec','#cccccc']);
+
+              data2 = data.filter(function(d) {
+                if (exchange) {
+                  return d.year >= lower_bound && d.year <= upper_bound && d.exchange
+                  && d.exchange == exchange;
+                }
+                else {
+                  return d.year >= lower_bound && d.year <= upper_bound;
+                }
+              });
+              
+              var variable = gains == 0 ? "gainer" : "loser";
+
+              var data3 = [];
+              for (i=0; i < data2.length; i++) {
+                //console.log(data2[i]);
+                var alreadyPresent = false;
+                entity2check = data2[i][variable];
+                index2save = null;
+                for (j=0; j < data3.length; j++) {
+                  if (data3[j][variable] == entity2check) {
+                    index2save = j;
+                    alreadyPresent = true;
+                  }
+                }
+                if (alreadyPresent == true) {
+                  data3[index2save]["land"] += data2[i]["land"];
+                  data3[index2save]["people"] += data2[i]["people"];
+                }
+                else {
+                  data3.push(data2[i]);
+                }
+              }
+              
+              var root = type == true ? d3.hierarchy({children: data3})
+                      .sum(function(d) { return d.people; }) :
+                      d3.hierarchy({children: data3})
+                      .sum(function(d) { return d.land; });
+
+              var node = svg.selectAll(".node")
+                      .data(pack(root).leaves())
+                      .enter().append("g")
+                      .attr("class", "node")
+                      .attr("transform", function(d) { return "translate(" + (d.x + 125) + "," + d.y + ")"; });
+
+
+              node.append("circle")
+                  .attr("id", function(d) { return d.id; })
+                  .attr("r", function(d) { return d.r; })
+                  .style("fill", function(d) { return color(d.data.year); });
+
+
+              node.append("text")
+                  .attr("font-size", function(d) { return 0.25*d.r + "px"; })
+                  .text(function(d) {
+                    return gains == 0 ? d.data.gainer : d.data.loser;
+                  });
+          });
+}
+
+function updateNetBubble(lower_bound, upper_bound, type, exchange) {
+d3.csv("wrangle.csv", 
+        function(d) {
+          d.exchange = d["procedure"];
+          d.land = +d["area"];
+          d.people = +d["pop"];
+          d.year = d["year"];
+          d.gainer = d["gainer"];
+          d.loser = d["loser"];
+
+          return d;
+        }, 
+        function(error, data) {
+          if (error) throw error;
+
+          svg.selectAll(".node").remove();
+
+            data2 = data.filter(function(d) {
+              if (exchange) {
+                return d.year >= lower_bound && d.year <= upper_bound && d.exchange
+                && d.exchange == exchange;
+              }
+              else {
+                return d.year >= lower_bound && d.year <= upper_bound;
+              }
+            });
+            
+            var data3 = [];
+            for (i=0; i < data2.length; i++) {
+              //console.log(data2[i]);
+              var alreadyPresentGain = false;
+              var alreadyPresentLoss = false;
+              entity2check = data2[i]["gainer"];
+              otherentity2check = data2[i]["loser"];
+              index2save = null;
+              index2save1 = null;
+              for (j=0; j < data3.length; j++) {
+                if (data3[j]["entity"] == entity2check) {
+                  index2save = j;
+                  alreadyPresentGain = true;
+                }
+                if (data3[j]["entity"] == otherentity2check) {
+                  index2save1 = j;
+                  alreadyPresentLoss = true;  
+                }
+              }
+              if (alreadyPresentGain == false && alreadyPresentLoss == false) {
+                data2[i]["entity"] = data2[i]["gainer"];
+                data3.push(data2[i]);
+                newdata = {};
+                newdata["exchange"] = -1 * data2[i]["exchange"];
+                newdata["land"] = -1 * data2[i]["land"];
+                newdata["people"] = -1 * data2[i]["people"];
+                newdata["entity"] = data2[i]["loser"];
+                data3.push(newdata);
+              }
+              else {
+                if (alreadyPresentGain == true ) {
+                  data3[index2save]["land"] += data2[i]["land"];
+                  data3[index2save]["people"] += data2[i]["people"];
+                }
+                else {
+                  data3[index2save1]["land"] -= data2[i]["land"];
+                  data3[index2save1]["people"] -= data2[i]["people"];
+                }
+              }
+            };
+
+            for (i=0; i < data3.length; i++) {
+              data3[i]["peopleLoss"] = data3[i]["people"] >= 0 ? "false" : "true";
+              data3[i]["landLoss"] = data3[i]["land"] >= 0 ? "false" : "true";
+            }
+            
+            var root = type == true ? d3.hierarchy({children: data3})
+                    .sum(function(d) { return Math.abs(d.people); }) :
+                    d3.hierarchy({children: data3})
+                    .sum(function(d) { return Math.abs(d.land); });
+
+            var node = svg.selectAll(".node")
+                    .data(pack(root).leaves())
+                    .enter().append("g")
+                    .attr("class", "node")
+                    .attr("transform", function(d) { return "translate(" + (d.x + 125) + "," + d.y + ")"; });
+
+
+            node.append("circle")
+                .attr("id", function(d) { return d.id; })
+                .attr("r", function(d) { return d.r; })
+                .style("fill", function(d) { 
+                  if (type == true) {
+                    return d.data.peopleLoss == "false" ? '#b3cde3' : '#fbb4ae';
+                  }
+                  else {
+                    return d.data.landLoss == "false" ? '#b3cde3' : '#fbb4ae';
+                  } });
+
+
+            node.append("text")
+                .attr("font-size", function(d) { return 0.25*d.r + "px"; })
+                .text(function(d) {
+                  return d.data.entity;
+                });
+        });
+}
+/* end */
 
 </script>
