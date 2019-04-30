@@ -370,6 +370,7 @@ function main(error, worldContinents, worldCountries, names, exchange) {
     console.log("uncluster called");
     // console.log(continent_gs);
     // var continent_gs = d3.selectAll(".continent");
+    clusterSimulation.stop();
     continent_gs.transition()    
               .duration(2000)    
               .style("opacity", "1");
@@ -434,8 +435,6 @@ function main(error, worldContinents, worldCountries, names, exchange) {
 
   function startClusterSimulation() {
     console.log("cluster called");
-    // top_g.selectAll(".selectLayer").remove();
-    // var continent_gs = d3.selectAll(".continent");
     continent_gs.transition()    
             .duration(2000)    
             .style("opacity", "0");
@@ -444,7 +443,6 @@ function main(error, worldContinents, worldCountries, names, exchange) {
   }
 
   function toggleCluster(continent_gs, clustered) {
-    // var continent_gs = d3.selectAll(".continent");
     if (!clustered) {
       startClusterSimulation();
       d3.select("#toggle-cluster")
@@ -465,6 +463,7 @@ function main(error, worldContinents, worldCountries, names, exchange) {
 
     // remove unnecessary centroids
     newCentroid.exit().remove();
+
     // create new centroids
     newCentroid.enter().append("circle")
       .attr("r", function(d) { return d.radius; })
@@ -671,13 +670,12 @@ function startClusterSimulation(simulation, continent_gs) {
 
 function clusterTick(e) {
  	base_g.selectAll(".centroid")
-      .attr("cx", function(d) { 
-        // console.log(d);
-        return d.x; })
+      .attr("cx", function(d) { return d.x; })
       .attr("cy", function(d) { return d.y; });
 }
 
 function unclusterTick(e) {
+  console.log("uncluster tick called??");
   var val;
   base_g.selectAll(".centroid")
       .attr("cx", function(d) {
