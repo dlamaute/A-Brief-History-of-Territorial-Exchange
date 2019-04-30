@@ -317,7 +317,7 @@ function main(error, worldContinents, worldCountries, names, exchange) {
     .stop()
     .on("tick", clusterTick);
 
-  unclusterSimulation = d3.forceSimulation(centroids)
+  /* unclusterSimulation = d3.forceSimulation(centroids)
     .velocityDecay(0.1)
     /* .nodes(function(d){
       console.log("centroid:");
@@ -338,9 +338,9 @@ function main(error, worldContinents, worldCountries, names, exchange) {
         return d.orig_y;
       })
     )
-    .force("collide", collide)*/
+    .force("collide", collide)
     .stop()
-    .on("tick", unclusterTick);
+    .on("tick", clusterTick); */ //unclusterTick
   //console.log(centroids);
   //console.log(continent_gs);
   //console.log(clusterSimulation);
@@ -374,8 +374,12 @@ function main(error, worldContinents, worldCountries, names, exchange) {
               .duration(2000)    
               .style("opacity", "1");
 
+    centroids.transition()
+      .duration(500)
+      .attr("cx", function(d) { return d.orig_x; })
+      .attr("cy", function(d) { return d.orig_y; });
 
-    centroids
+    /* centroids
       .attr("transform", function(d) {
         var x_diff = d.x - d.orig_x;
         var y_diff = d.orig_y - d.y;
@@ -395,7 +399,7 @@ function main(error, worldContinents, worldCountries, names, exchange) {
       console.log("c");
       console.log(c);
       idx += 1;
-    });
+    }); */
       /* .attr("cx", function(d) { 
         console.log(d.name);
         return d.orig_x; })
@@ -428,7 +432,7 @@ function main(error, worldContinents, worldCountries, names, exchange) {
     clustered = false;
   }
 
-  function startClusterSimulation(continent_gs) {
+  function startClusterSimulation() {
     console.log("cluster called");
     // top_g.selectAll(".selectLayer").remove();
     // var continent_gs = d3.selectAll(".continent");
@@ -442,7 +446,7 @@ function main(error, worldContinents, worldCountries, names, exchange) {
   function toggleCluster(continent_gs, clustered) {
     // var continent_gs = d3.selectAll(".continent");
     if (!clustered) {
-      startClusterSimulation(continent_gs);
+      startClusterSimulation();
       d3.select("#toggle-cluster")
         .html("Switch to Geographical View");
     } else {
@@ -452,7 +456,24 @@ function main(error, worldContinents, worldCountries, names, exchange) {
     }
   }
 
-  function updateBubbles() {}
+  function updateBubbles(newData) {
+    // record old locations: not done
+
+    // put in new data
+    var newCentroid = base_g.selectAll(".centroid")
+      .data(newData);
+
+    // remove unnecessary centroids
+    newCentroid.exit().remove();
+    // create new centroids
+    newCentroid.enter().append("circle")
+      .attr("r", function(d) { return d.radius; })
+      .attr("cx", function(d) { return d.x; })
+      .attr("cy", function(d) { return d.y; });
+
+    // if "clustered", recluster: not done
+  }
+
 }
 
 /* function uncluster(d) {
@@ -552,25 +573,39 @@ function continentClicked(d) {
 
 function countryClicked(d) {
 	console.log("country clicked");
-	console.log(d.name);
-  /* if (typeof base_g.selectAll(".centroid") !== 'undefined') {
+  if (typeof base_g.selectAll(".centroid") !== 'undefined') {
     var centroids = base_g.selectAll(".centroid");
+    var theCentroid;
     centroids.each(function(c) {
       var centroid = d3.select(this);
-      // console.log(centroid);
-      if (centroid.attr("cx") == d.orig_x && centroid.attr("cy") == d.orig_y) {
+      if (centroid.attr("cx") == d.x && centroid.attr("cy") == d.y) {
+        theCentroid = centroid;
+        if (typeof theCentroid !== 'undefined') {
+          return true;
+        }
+      }
+      /*  {
+        console.log(d.name + " clicked");
         centroid
           .attr("stroke", "red")
           .attr("stroke-width", "10");
         console.log(centroid);
       } else {
+        console.log(d.name + " other");
         centroid
-          .attr("stroke", "black")
-          .attr("stroke-width", "1");
-      }
+          .attr("stroke", "blue")
+          .attr("stroke-width", "100");
+      } */
     });
-  }*/
+    if (typeof theCentroid !== 'undefined') {
+      theCentroid
+            .attr("stroke", "red")
+            .attr("stroke-width", "10");
+        console.log(theCentroid);
+    }
+  }
 }
+
 
 function reset() {
   active.classed("active", false);
