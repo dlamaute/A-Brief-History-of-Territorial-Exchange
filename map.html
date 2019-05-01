@@ -31,8 +31,8 @@
 }
 
 .centroid {
-  stroke: #000;
-  stroke-width: 0.1;
+  /* stroke: #000;
+  stroke-width: 0.1; */
   cursor: pointer;
 }
 
@@ -79,9 +79,9 @@ var body = d3.select("body");
 
 var width = 960,
     height = 700,
-    padding = 1.5,
-    clusterPadding = 6,
-    maxRadius = height*0.1, // this should actually vary with the current node options
+    padding = 1.5, // distance between same-color nodes
+    clusterPadding = 6, // distance between different-color nodes
+    maxRadius = height*0.1, // should this vary with the current node options?
     active = d3.select(null);
 
 var projection = d3.geoMercator()
@@ -260,6 +260,8 @@ function main(error, worldContinents, worldCountries, names, exchange) {
   	.attr("r", function(d) { return d.radius; })
   	.attr("cx", function(d) { return d.x; })
     .attr("cy", function(d) { return d.y; })
+    .attr("stroke", "#000")
+    .attr("stroke-width", "0.1")
     .on("click", countryClicked)
     .on("mouseover", function(d) {
         tooltipDiv.transition()    
@@ -282,7 +284,11 @@ function main(error, worldContinents, worldCountries, names, exchange) {
 
   clusterSimulation = d3.forceSimulation(centroidItems)
     .velocityDecay(0.1)
-    .force('x', d3.forceX()
+    .force("center", d3.forceCenter(width/2, height/2))
+    .force("gravity", d3.forceManyBody()
+      // .target([width/2, height/2])
+      .strength(0.1))
+    .force("x", d3.forceX()
       .strength(0.007)
       .x(function(d) {
         if(d.region) {
@@ -293,7 +299,7 @@ function main(error, worldContinents, worldCountries, names, exchange) {
         }
       })
     )
-    .force('y', d3.forceY()
+    .force("y", d3.forceY()
       .strength(0.007)
       .y(function(d) {
         if(d.region) {
@@ -469,30 +475,42 @@ function countryClicked(d) {
     centroids.each(function(c) {
       var centroid = d3.select(this);
       if (centroid.attr("cx") == d.x && centroid.attr("cy") == d.y) {
-        theCentroid = centroid;
-        if (typeof theCentroid !== 'undefined') {
-          return true;
-        }
+        // theCentroid = centroid;
+        centroid
+            .attr("stroke", "#f00")
+            .attr("stroke-width", "3");
+      } else {
+        centroid
+            .attr("stroke", "#000")
+            .attr("stroke-width", "0.1");
       }
-      /*  {
+        /* if (typeof theCentroid !== 'undefined') {
+          return true;
+        } 
+      }
+      /*{
         console.log(d.name + " clicked");
         centroid
           .attr("stroke", "red")
           .attr("stroke-width", "10");
         console.log(centroid);
-      } else {
+      /* } else {
         console.log(d.name + " other");
         centroid
           .attr("stroke", "blue")
           .attr("stroke-width", "100");
       } */
-    });
-    if (typeof theCentroid !== 'undefined') {
+    // });
+    /* if (typeof theCentroid !== 'undefined') {
       theCentroid
             .attr("stroke", "red")
-            .attr("stroke-width", "10");
+            .attr("stroke-width", "5");
         console.log(theCentroid);
-    }
+    } else {
+      .attr("stroke", "#000")
+      .attr("stroke-width", "0.1");
+    } */
+    });
   }
 }
 
