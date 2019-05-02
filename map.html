@@ -7,18 +7,7 @@
   pointer-events: all; 
 }
 
-.selectLayer {
-  fill: #ccc;
-  fill-opacity: 0.5;
-  cursor: pointer;
-}
-
 .feature {
-  fill: #ccc;
-  cursor: pointer;
-}
-
-.country {
   fill: #ccc;
   cursor: pointer;
 }
@@ -90,13 +79,12 @@ var projection = d3.geoMercator()
 var zoom = d3.zoom().on("zoom", zoomed);
 var path = d3.geoPath().projection(projection);
 
-var countryMode = false;  // delete?
-
 var clustered = false;
 var clusterSimulation;
 var unclusterSimulation;
 var continent_gs;
 var continentClusterRadii = {};
+var data;
 
 // Define the div for the tooltip
 let tooltipDiv = body.append("div") 
@@ -233,10 +221,6 @@ function main(error, worldContinents, worldCountries, names, exchange) {
 	  	}); */
 	});
 
-
-  var continents = base_g.selectAll(".continent");
-  var countries = base_g.selectAll(".country");  // remove
-
   centroidItems = countriesData.map(function(feature) {
 		var centroidItem = {
 			x: path.centroid(feature)[0],
@@ -280,11 +264,6 @@ function main(error, worldContinents, worldCountries, names, exchange) {
             .style("opacity", 0); 
     });
 
-  /* baseSimulation = d3.forceSimulation(centroidItems)
-    .velocityDecay(0.1)
-    .force("collide", collide)
-    .on("tick", clusterTick); */
-
   clusterSimulation = d3.forceSimulation(centroidItems)
     .velocityDecay(0.1)
     // .force("center", d3.forceCenter(width/2, height/2))
@@ -296,6 +275,7 @@ function main(error, worldContinents, worldCountries, names, exchange) {
       .x(function(d) {
         if(d.region) {
           var cluster = continentCentroids[d.region];
+          console.log("clustering x");
           return cluster.x;
         } else {
           return d.x;
@@ -307,6 +287,7 @@ function main(error, worldContinents, worldCountries, names, exchange) {
       .y(function(d) {
         if(d.region) {
           var cluster = continentCentroids[d.region];
+          console.log("clustering y");
           return cluster.y;
         } else {
           return d.y;
@@ -315,18 +296,18 @@ function main(error, worldContinents, worldCountries, names, exchange) {
     )
     .force("collide", collide)
     .stop()
-    .on("tick", clusterTick);
+    .on("tick", function(d) { return clusterTick(300); });
 
-
+  data = centroidItems; // set initial data
 
   d3.select("#toggle-cluster")
     .on("click", function() {
-      return toggleCluster(continent_gs, clustered);
+      return toggleCluster(continent_gs, clustered, data);
     });
 
-  function toggleCluster(continent_gs, clustered) {
+  function toggleCluster(continent_gs, clustered, data) {
     if (!clustered) {
-      startCluster();
+      startCluster(data);
       d3.select("#toggle-cluster")
         .html("Switch to Geographical View");
     } else {
@@ -336,12 +317,15 @@ function main(error, worldContinents, worldCountries, names, exchange) {
     }
   }
 
-  function startCluster() {
+  function startCluster(data) {
     console.log("cluster called");
+    // console.log(data);
     continent_gs.transition()    
             .duration(500)    
             .style("opacity", "0");
-    clusterSimulation.restart();
+    clusterSimulation
+      .nodes(data)
+      .restart();
     clustered = true;
   }
 
@@ -391,8 +375,19 @@ function main(error, worldContinents, worldCountries, names, exchange) {
       .attr("class", "centroid")
       .attr("fill", function(d) { return "#a0a0f0"; })
       .attr("r", function(d) { return d.radius; })
-      .attr("cx", function(d) { return d.x; })
-      .attr("cy", function(d) { return d.y; })
+      .attr("cx", function(d) { 
+        if (clustered) {
+          return d.x; 
+        }
+        return d.orig_x;
+      })
+      .attr("cy", function(d) { 
+        if (clustered) {
+          return d.y; 
+        }
+        console.log("returning to orig");
+        return d.orig_y;
+      })
       .attr("stroke", function(d) { return d.color; })
       .attr("stroke-width", "2")
       .on("click", countryClicked)
@@ -412,6 +407,11 @@ function main(error, worldContinents, worldCountries, names, exchange) {
 
     // TODO: if "clustered", recluster?
     // Bug?
+    if (clustered) {
+      startCluster(newData);
+    } else {
+      startUncluster(continent_gs);
+    }
   }
 
 }
@@ -441,8 +441,6 @@ function continentClicked(d) {
   svg.transition()
       .duration(750)
       .call( zoom.transform, d3.zoomIdentity.translate(translate[0],translate[1]).scale(scale) );
-
-  // base_g.selectAll(".country")
 
   /* d3.queue()
   	.defer(d3.json, "https://unpkg.com/world-atlas@1/world/50m.json")
@@ -499,7 +497,6 @@ function continentClicked(d) {
         .attr("font-size", "10px")
         .attr("text-anchor", "middle");
 
-	  countryMode = true;
 	} */
 }
 
@@ -507,16 +504,18 @@ function countryClicked(d) {
 	console.log("country clicked");
   var centroids = base_g.selectAll(".centroid");
   if (typeof centroids !== 'undefined') {
+    // look through all the centroids
     centroids.each(function(c) {
       var centroid = d3.select(this);
+      // if the centroid is the country that was clicked, highlight
       if (centroid.attr("cx") == d.x && centroid.attr("cy") == d.y) {
         centroid
             .attr("stroke", "#f00")
             .attr("stroke-width", "5");
       } else {
-        console.log("centroid:");
-        console.log(centroid.data()[0]);
-        console.log(centroid.data()[0].color);
+        // console.log("centroid:");
+        // console.log(centroid.data()[0]);
+        // console.log(centroid.data()[0].color);
         centroid
             .attr("stroke", centroid.data()[0].color)
             .attr("stroke-width", "2");
@@ -531,13 +530,7 @@ function reset() {
 
   svg.transition()
       .duration(750)
-      .call( zoom.transform, d3.zoomIdentity ); 
-
-  if (countryMode) {
-  	countryMode = false;
-  	console.log(base_g.selectAll(".country"));
-  	console.log(base_g.selectAll("path"));
-  }
+      .call( zoom.transform, d3.zoomIdentity );
 }
 
 function zoomed() {
