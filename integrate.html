@@ -1,5 +1,16 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<link rel="stylesheet"  href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/topojson.v2.min.js"></script>
+<script src="https://d3js.org/d3-queue.v3.min.js"></script>
+
 <style>
 
 .background {
@@ -31,8 +42,6 @@
 }
 
 .centroid {
-  stroke: #000;
-  stroke-width: 0.1;
   cursor: pointer;
 }
 
@@ -188,6 +197,10 @@ h1 {
   clip-path: url(#clip);
 }
 
+.b_clicked {
+	background-color: lightgray;
+}
+
 </style>
 
 <body>
@@ -218,16 +231,6 @@ h1 {
 	
 <p id="chart">
 
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
-<script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
-<script src="https://d3js.org/d3.v4.min.js"></script>
-<link rel="stylesheet"  href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
-<script src="https://d3js.org/d3.v4.min.js"></script>
-<script src="https://d3js.org/topojson.v2.min.js"></script>
-<script src="https://d3js.org/d3-queue.v3.min.js"></script>
-
 <script src="d3.v3.js"></script>
 <script src="sankey.js"></script>
 
@@ -236,6 +239,14 @@ h1 {
 var body = d3.select("body");
 var mapDiv = d3.select("#map-div");
 
+var lower = 1815;
+var upper = 2016;
+var isPeople = false;
+var exchangeType = "All";
+var gains = 0;
+var loaded = false;
+
+// SVG for timeline
 var svg1 = d3.select("#svg1"),
 	margin = {top: 10, right: 10, bottom: 10, left: 10},
     margin2 = {top: 10, right: 10, bottom: 20, left: 20},
@@ -243,24 +254,12 @@ var svg1 = d3.select("#svg1"),
     height = +svg1.attr("height") - margin.top - margin.bottom,
     height2 = +svg1.attr("height") - margin2.top - margin2.bottom;
 
-var lower = 1815;
-var upper = 2016;
-var isPeople = false;
-var exchangeType = null;
-var gains = 0;
-
 var width = 960,
     height = 500,
     padding = 1.5,
     clusterPadding = 6,
     maxRadius = height*0.1, // this should actually vary with the current node options
     active = d3.select(null);
-
-var lower = 1815;
-var upper = 2016;
-var isPeople = false;
-var exchangeType = null;
-var gains = 0;
 
 body.attr("width", (width + 100).toString() + "px").attr("height", (height + 50).toString() + "px");
 
@@ -292,6 +291,7 @@ svg.append("rect")
     .attr("height", height)
     .on("click", reset);
 
+// Add in Sankey variable
 var sankey = body.append("div")
   .attr("class", "sankey")
 
@@ -326,6 +326,7 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
   var countrySelect = d3.select("#countries")
         .append("div")
         .append("select")
+        .on('change', countryChange)
         .attr("class", "custom-select")
         .attr("id", "country");
 
@@ -376,6 +377,13 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
 		};
 	}
 
+  // Update Sankey diagram if new country is selected
+  function countryChange() {
+		var selected = d3.select(this).property("value");
+    updateSankey(lower, upper, exchangeType, selected, isPeople);
+  };
+
+
   // filter exchange here to get countryExchangeData
   var countryExchangeData = {} // incorporate three-letter code
 
@@ -422,14 +430,6 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
         /* end debug */
   		}
   	});
-
-	  	// for when countryExchangeData is implemented
-	  	/* countryExchangeData.some(function(e) {
-	  		if (d.nameCode == e.nameCode) {
-		  		d.radius = 5;
-		  		d.color = #ab1bab;
-		  	}
-	  	}); */
 	});
 
 
@@ -518,13 +518,6 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
     .attr("text-anchor", "middle");
 }
 
-function onExchangeChange() {
-    var selected = d3.select(this).property("value");
-    exchangeType = selected=="All" ? null : selected;
-    updateBubble(lower, upper, isPeople, exchangeType, gains);
-    updateTimeline(exchangeType);
-};
-
 function updateYearsBanner(lower, upper) {
   var select = d3.select("#yrs")
           .text(lower + " - " + upper);
@@ -592,6 +585,7 @@ function stopped() {
 }
 
 function startSimulation() {
+  loaded = true;
   if (typeof simulation !== 'undefined') {
     top_g.selectAll(".selectLayer").remove();
     simulation.restart();
@@ -634,237 +628,42 @@ function collide(alpha) {
   });
 }
 
-/* here we go */
-function updateBubble(lower_bound, upper_bound, type, exchange, gains) {
-  d3.csv("wrangle.csv", 
-          function(d) {
-            d.exchange = d["procedure"];
-            d.land = +d["area"];
-            d.people = +d["pop"];
-            d.year = d["year"];
-            d.gainer = d["gainer"];
-            d.loser = d["loser"];
-
-            return d;
-          }, 
-          function(error, data) {
-            if (error) throw error;
-
-            svg.selectAll(".node").remove();
-
-            var color = d3.scaleOrdinal()
-                      .domain(data.map(function(d){ return d.year; }))
-                      .range(['#fbb4ae','#b3cde3','#ccebc5','#decbe4','#fed9a6', '#ffe9a8','#b9bfe3','#fddaec','#cccccc']);
-
-              data2 = data.filter(function(d) {
-                if (exchange) {
-                  return d.year >= lower_bound && d.year <= upper_bound && d.exchange
-                  && d.exchange == exchange;
-                }
-                else {
-                  return d.year >= lower_bound && d.year <= upper_bound;
-                }
-              });
-              
-              var variable = gains == 0 ? "gainer" : "loser";
-
-              var data3 = [];
-              for (i=0; i < data2.length; i++) {
-                //console.log(data2[i]);
-                var alreadyPresent = false;
-                entity2check = data2[i][variable];
-                index2save = null;
-                for (j=0; j < data3.length; j++) {
-                  if (data3[j][variable] == entity2check) {
-                    index2save = j;
-                    alreadyPresent = true;
-                  }
-                }
-                if (alreadyPresent == true) {
-                  data3[index2save]["land"] += data2[i]["land"];
-                  data3[index2save]["people"] += data2[i]["people"];
-                }
-                else {
-                  data3.push(data2[i]);
-                }
-              }
-              
-              var root = type == true ? d3.hierarchy({children: data3})
-                      .sum(function(d) { return d.people; }) :
-                      d3.hierarchy({children: data3})
-                      .sum(function(d) { return d.land; });
-
-              var node = svg.selectAll(".node")
-                      .data(pack(root).leaves())
-                      .enter().append("g")
-                      .attr("class", "node")
-                      .attr("transform", function(d) { return "translate(" + (d.x + 125) + "," + d.y + ")"; });
-
-
-              node.append("circle")
-                  .attr("id", function(d) { return d.id; })
-                  .attr("r", function(d) { return d.r; })
-                  .style("fill", function(d) { return color(d.data.year); });
-
-
-              node.append("text")
-                  .attr("font-size", function(d) { return 0.25*d.r + "px"; })
-                  .text(function(d) {
-                    return gains == 0 ? d.data.gainer : d.data.loser;
-                  });
-          });
-}
-
-function updateNetBubble(lower_bound, upper_bound, type, exchange) {
-d3.csv("wrangle.csv", 
-        function(d) {
-          d.exchange = d["procedure"];
-          d.land = +d["area"];
-          d.people = +d["pop"];
-          d.year = d["year"];
-          d.gainer = d["gainer"];
-          d.loser = d["loser"];
-
-          return d;
-        }, 
-        function(error, data) {
-          if (error) throw error;
-
-          svg.selectAll(".node").remove();
-
-            data2 = data.filter(function(d) {
-              if (exchange) {
-                return d.year >= lower_bound && d.year <= upper_bound && d.exchange
-                && d.exchange == exchange;
-              }
-              else {
-                return d.year >= lower_bound && d.year <= upper_bound;
-              }
-            });
-            
-            var data3 = [];
-            for (i=0; i < data2.length; i++) {
-              //console.log(data2[i]);
-              var alreadyPresentGain = false;
-              var alreadyPresentLoss = false;
-              entity2check = data2[i]["gainer"];
-              otherentity2check = data2[i]["loser"];
-              index2save = null;
-              index2save1 = null;
-              for (j=0; j < data3.length; j++) {
-                if (data3[j]["entity"] == entity2check) {
-                  index2save = j;
-                  alreadyPresentGain = true;
-                }
-                if (data3[j]["entity"] == otherentity2check) {
-                  index2save1 = j;
-                  alreadyPresentLoss = true;  
-                }
-              }
-              if (alreadyPresentGain == false && alreadyPresentLoss == false) {
-                data2[i]["entity"] = data2[i]["gainer"];
-                data3.push(data2[i]);
-                newdata = {};
-                newdata["exchange"] = -1 * data2[i]["exchange"];
-                newdata["land"] = -1 * data2[i]["land"];
-                newdata["people"] = -1 * data2[i]["people"];
-                newdata["entity"] = data2[i]["loser"];
-                data3.push(newdata);
-              }
-              else {
-                if (alreadyPresentGain == true ) {
-                  data3[index2save]["land"] += data2[i]["land"];
-                  data3[index2save]["people"] += data2[i]["people"];
-                }
-                else {
-                  data3[index2save1]["land"] -= data2[i]["land"];
-                  data3[index2save1]["people"] -= data2[i]["people"];
-                }
-              }
-            };
-
-            for (i=0; i < data3.length; i++) {
-              data3[i]["peopleLoss"] = data3[i]["people"] >= 0 ? "false" : "true";
-              data3[i]["landLoss"] = data3[i]["land"] >= 0 ? "false" : "true";
-            }
-            
-            var root = type == true ? d3.hierarchy({children: data3})
-                    .sum(function(d) { return Math.abs(d.people); }) :
-                    d3.hierarchy({children: data3})
-                    .sum(function(d) { return Math.abs(d.land); });
-
-            var node = svg.selectAll(".node")
-                    .data(pack(root).leaves())
-                    .enter().append("g")
-                    .attr("class", "node")
-                    .attr("transform", function(d) { return "translate(" + (d.x + 125) + "," + d.y + ")"; });
-
-
-            node.append("circle")
-                .attr("id", function(d) { return d.id; })
-                .attr("r", function(d) { return d.r; })
-                .style("fill", function(d) { 
-                  if (type == true) {
-                    return d.data.peopleLoss == "false" ? '#b3cde3' : '#fbb4ae';
-                  }
-                  else {
-                    return d.data.landLoss == "false" ? '#b3cde3' : '#fbb4ae';
-                  } });
-
-
-            node.append("text")
-                .attr("font-size", function(d) { return 0.25*d.r + "px"; })
-                .text(function(d) {
-                  return d.data.entity;
-                });
-        });
-}
-
-function onchange() {
-		var selected = d3.select(this).property("value");
-		exchangeType = selected=="All" ? null : selected;
-		updateBubble(lower, upper, isPeople, exchangeType, gains);
-		updateTimeline(exchangeType);
-};
-
-function updateYearsBanner(lower, upper) {
-	var select = d3.select("#yrs")
-					.text("" + lower + " - " + upper);
-}
-
+//INITIALIZATION
 updateTimeline("All");
+d3.select("#button1").classed("b_clicked", true);
+d3.select("#button3").classed("b_clicked", true);
 
 function updateTimeline(exchangeType) {
 
-d3.csv("wrangle.csv", 
-  function(d) {
-    d.exchange = +d["procedure"];
-    d.land = +d["area"];
-    d.people = +d["pop"];
-    d.year = d["year"];
-    d.count = d["count"];
+  d3.csv("wrangle.csv", 
+    function(d) {
+      d.exchange = +d["procedure"];
+      d.land = +d["area"];
+      d.people = +d["pop"];
+      d.year = d["year"];
+      d.count = d["count"];
 
-    return d;
-  }, 
-  function(error, data) {
-    if (error) throw error;
-    
-    svg1.selectAll(".focus").remove();
-    svg1.selectAll(".context").remove();
-    
-    var x = d3.scaleLinear().range([0, width]),
-      y2 = d3.scaleLinear().range([height2, 0]);
+      return d;
+    }, 
+    function(error, data) {
+      if (error) throw error;
       
-    var yTicks = 6;
-    if (exchangeType=="Annexation") {
-      yTicks = 3;
-    }
-    if (exchangeType=="Conquest") {
-      yTicks = 4;
-    }
-    if (exchangeType=="Unification") {
-      yTicks = 6;
-    }
+      svg1.selectAll(".focus").remove();
+      svg1.selectAll(".context").remove();
+      
+      var x = d3.scaleLinear().range([0, width]),
+        y2 = d3.scaleLinear().range([height2, 0]);
+      
+      var yTicks = 6;
+      if (exchangeType=="Annexation") {
+        yTicks = 3;
+      }
+      if (exchangeType=="Conquest") {
+        yTicks = 4;
+      }
+      if (exchangeType=="Unification") {
+        yTicks = 6;
+      }
 
     var xAxis = d3.axisBottom(x).ticks(20).tickFormat(d3.format(".4")),
       yAxis2 = d3.axisLeft(y2).ticks(yTicks);
@@ -895,7 +694,7 @@ d3.csv("wrangle.csv",
     }
     
     for (i=0; i<data.length; i++) {
-      if (exchangeType=="All" || exchangeType==null || data[i]["procedure"]==exchangeType) {
+      if (exchangeType=="All" || data[i]["procedure"]==exchangeType) {
         thisYear = data[i]["year"]
         for (j=1816; j<=2018; j++) {
           if (thisYear == j) {
@@ -938,19 +737,305 @@ d3.csv("wrangle.csv",
 
 }
 
+// Change values based on exchange type (ex. Annexation)
+function onExchangeChange() {
+  var selected = d3.select(this).property("value");
+    exchangeType = selected;
+    console.log(exchangeType);
+    getNewData(lower, upper, isPeople, exchangeType, gains);
+    updateTimeline(exchangeType);
+};
+
+// Change values based on timeline
 function brushed() {
+  var s = d3.event.selection || x.range();
+  var min_year = Math.ceil(s[0]/4.73 + 1815);		// Gets the minimum
+  var max_year = Math.floor(s[1]/4.73 + 1815);		// Gets the maximum
+  var range_years = [min_year, max_year]; 
 
-var s = d3.event.selection || x.range();
-var min_year = Math.ceil(s[0]/4.73 + 1815);		// Gets the minimum
-var max_year = Math.floor(s[1]/4.73 + 1815);		// Gets the maximum
-var range_years = [min_year, max_year]; 
+  lower = min_year
+  upper = max_year
 
-lower = min_year
-upper = max_year
+  updateYearsBanner(lower, upper);
 
-updateYearsBanner(lower, upper);
-//console.log("Here");
+  // update bubbles for change in timeline
+  if (gains != 2) {
+      getNewData(lower, upper, isPeople, exchangeType, gains);
+      //updateBubbles(newData);
+
+    }
+    else {
+      getNewNetData(lower, upper, isPeople, exchangeType, gains);	
+    }
 }
+
+// Generate new centroid data with updated parameters
+function getNewData(lower_bound, upper_bound, type, exchange, gains) {
+
+var check = d3.csv("wrangle.csv", 
+        function(d) {
+          d.exchange = d["procedure"];
+          d.land = +d["area"];
+          d.people = +d["pop"];
+          d.year = d["year"];
+          d.gainer = d["gainer"];
+          d.loser = d["loser"];
+
+          return d;
+        }, 
+        function(error, data) {
+          if (error) throw error;
+
+          var color = d3.scaleOrdinal()
+                    .domain(data.map(function(d){ return d.year; }))
+                    .range(['#fbb4ae','#b3cde3','#ccebc5','#decbe4','#fed9a6', '#ffe9a8','#b9bfe3','#fddaec','#cccccc']);
+
+            var variable = gains == 0 ? "gainer" : "loser";
+
+            var data3 = [];
+            for (i=0; i < data.length; i++) {
+              //console.log(data2[i]);
+              var alreadyPresent = false;
+              entity2check = data[i][variable];
+              index2save = null;
+              for (j=0; j < data3.length; j++) {
+                if (data3[j][variable] == entity2check) {
+                  index2save = j;
+                  alreadyPresent = true;
+                }
+              }
+              if (alreadyPresent == true) {
+                data3[index2save]["land"] += data[i]["land"];
+                data3[index2save]["people"] += data[i]["people"];
+              }
+              else {
+                data3.push(data[i]);
+              }
+            }
+
+            completeUpdate(data3, lower_bound, upper_bound, type, exchange, gains, false);
+
+        });
+}
+
+function getNewNetData(lower_bound, upper_bound, type, exchange) {
+
+  d3.csv("wrangle.csv", 
+          function(d) {
+            d.exchange = d["procedure"];
+            d.land = +d["area"];
+            d.people = +d["pop"];
+            d.year = d["year"];
+            d.gainer = d["gainer"];
+            d.loser = d["loser"];
+
+            return d;
+          }, 
+          function(error, data) {
+            if (error) throw error;
+
+              var data3 = [];
+              for (i=0; i < data.length; i++) {
+                //console.log(data2[i]);
+                var alreadyPresentGain = false;
+                var alreadyPresentLoss = false;
+                entity2check = data[i]["gainer"];
+                otherentity2check = data[i]["loser"];
+                index2save = null;
+                index2save1 = null;
+                for (j=0; j < data3.length; j++) {
+                  if (data3[j]["entity"] == entity2check) {
+                    index2save = j;
+                    alreadyPresentGain = true;
+                  }
+                  if (data3[j]["entity"] == otherentity2check) {
+                    index2save1 = j;
+                    alreadyPresentLoss = true;	
+                  }
+                }
+                if (alreadyPresentGain == false) {
+                  data[i]["entity"] = data[i]["gainer"];
+                  data3.push(data[i]);
+                }
+                else {
+                  data3[index2save]["land"] += data[i]["land"];
+                  data3[index2save]["people"] += data[i]["people"];
+                }
+                if (alreadyPresentLoss == false) {
+                  newdata = {};
+                  newdata["exchange"] = data[i]["exchange"];
+                  newdata["land"] = -1 * data[i]["land"];
+                  newdata["people"] = -1 * data[i]["people"];
+                  newdata["entity"] = data[i]["loser"];
+                  data3.push(newdata);
+                }
+                else {
+                  data3[index2save1]["land"] -= data[i]["land"];
+                  data3[index2save1]["people"] -= data[i]["people"];
+                }
+              };
+
+              for (i=0; i < data3.length; i++) {
+                data3[i]["peopleLoss"] = data3[i]["people"] >= 0 ? "false" : "true";
+                data3[i]["landLoss"] = data3[i]["land"] >= 0 ? "false" : "true";
+              }					
+
+              completeUpdate(data3, lower_bound, upper_bound, type, exchange, gains, true);
+
+          });
+
+}
+
+// Complete the update after getting data
+function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gains, isNet) {
+
+  if (isNet==false) {
+    centroidItems.filter(function(d) {
+              return inputData.some(function(n) {
+                if ((gains == 0 && d.name == n.gainer) ||
+                    (gains == 1 && d.name == n.loser)) {
+                  d.exchange = n.procedure;
+                  d.land = n.land;
+                  d.gainer = n.gainer;
+                  d.loser = n.loser;
+                  d.year = n.year;
+                  d.people = n.people;
+                }
+              })
+            });
+  }
+  else {
+    centroidItems.filter(function(d) {
+              return inputData.some(function(n) {
+                if (d.name == n.gainer || d.name == n.loser) {
+                  d.exchange = n.procedure;
+                  d.land = n.land;
+                  d.gainer = n.gainer;
+                  d.loser = n.loser;
+                  d.year = n.year;
+                  d.people = n.people;
+                  d.peopleLoss = n.peopleLoss;
+                  d.landLoss = n.landLoss;
+                }
+              })
+            });
+  }
+
+          if (exchange != "All") {
+            items = centroidItems.filter( function(d) {
+              return +d.year >= lower_bound && +d.year <= upper_bound && d.exchange
+                && d.exchange == exchange;
+              });
+          }
+          else {
+            items = centroidItems.filter( function(d) {
+                return d.year >= lower_bound && d.year <= upper_bound;
+              });
+          }
+          updateBubbles(items, type, isNet);
+}
+
+// Update bubbles on the map with new data; type = People if true, else Land
+function updateBubbles(newData, type, isNet) {
+    // put in new data
+    var min = d3.min(newData, function(d) { return type == true ? Math.abs(d.people) : Math.abs(d.land);} );
+    var max = d3.max(newData, function(d) { return type == true ? Math.abs(d.people) : Math.abs(d.land);} );
+
+    var newCentroids = base_g.selectAll(".centroid")
+      .data(newData);
+
+    newCentroids.exit().remove();
+    if (loaded) {
+      simulation.restart();
+    }
+    // create new centroids
+    newCentroids.enter().append("circle")
+      .merge(newCentroids) // merge existing and new...?
+      .attr("class", "centroid")
+      .attr("stroke", function(d) { return d.color;})
+      .attr("stroke-width", "2")
+      .attr("fill", function(d) { 
+            if (isNet) {
+              if (type) { return d.peopleLoss == "true" ? "salmon" : "lightblue"; }
+              else { return d.landLoss == "true" ? "salmon" : "lightblue"; }
+            }
+            else {
+              return "lightblue";
+            }
+          })
+      .attr("r", function(d) {
+        var diff = max - min == 0 ? 1 : max - min;
+        var normalization = type == true ? (15*(Math.abs(d.people) - min + 0.1)/diff) : (15*(Math.abs(d.land) - min + 0.1)/diff);
+        return Math.max(3, normalization); })
+      .attr("cx", function(d) { 
+        return d.orig_x;
+      })
+      .attr("cy", function(d) { 
+        return d.orig_y;
+      })
+      .on("click", countryClicked)
+      .on("mouseover", function(d) {
+          tooltipDiv.transition()    
+              .duration(200)    
+              .style("opacity", 1);    
+          tooltipDiv.html(d.name)  
+              .style("left", (d3.event.pageX) + "px")   
+              .style("top", (d3.event.pageY - 28) + "px");  
+          })          
+      .on("mouseout", function(d) {   
+          tooltipDiv.transition()    
+              .duration(500)    
+              .style("opacity", 0); 
+      });
+
+}
+
+// Update whether Land or People
+function updateData(value) {
+  if (value == false) {
+    d3.select("#button1").classed("b_clicked", true);
+    d3.select("#button2").classed("b_clicked", false);
+  }
+  else {
+    d3.select("#button1").classed("b_clicked", false);
+    d3.select("#button2").classed("b_clicked", true);
+  }
+  isPeople = value;
+  if (gains != 2) {
+    getNewData(lower, upper, isPeople, exchangeType, gains);	
+  }
+  else {
+    getNewNetData(lower, upper, isPeople, exchangeType, gains);	
+  }
+}
+
+// Update whether Gains or Losses or Net
+function updateGains(value) {
+
+  if (value == 0) {
+    d3.select("#button3").classed("b_clicked", true);
+    d3.select("#button4").classed("b_clicked", false);
+    d3.select("#button5").classed("b_clicked", false);
+  }
+  else if (value == 1) {
+    d3.select("#button3").classed("b_clicked", false);
+    d3.select("#button4").classed("b_clicked", true);
+    d3.select("#button5").classed("b_clicked", false);
+  }
+  else {
+    d3.select("#button3").classed("b_clicked", false);
+    d3.select("#button4").classed("b_clicked", false);
+    d3.select("#button5").classed("b_clicked", true);
+  }
+  gains = value;
+  if (gains != 2) {
+    getNewData(lower, upper, isPeople, exchangeType, gains);	
+  }
+  else {
+    getNewNetData(lower, upper, isPeople, exchangeType, gains);	
+  }
+}
+
 
 ///////////////SANKEY/////////////////
 
@@ -962,14 +1047,18 @@ function updateSankey(lower_bound, upper_bound, exchangeType, country, isLand) {
 	
 	//var periodLength = upper_bound - lower_bound;
 	//heightSan = (300 - marginSan.top - marginSan.bottom) * periodLength / 30;
-	
+  var length = d3.select("#chart")["_groups"][0][0].children.length;
+  if (length > 3) {
+    d3.select("#chart")["_groups"][0][0].children[3].remove();
+  }
+
 	var units = "km^2";
 	if (isLand == false) {
 		units = "people";
 	}
 
 	var formatNumber = d3v3.format(",.0f"),    // zero decimal places
-		format = function(d) { return formatNumber(d) + " " + units; },
+		format = function(d) { return formatNumber(d) + " " + units; }, 
 		color = d3v3.scale.category20();  // d3.v3
 		// color = d3.scaleOrdinal(d3.schemeCategory20);  // d3.v3
 	
@@ -992,7 +1081,7 @@ function updateSankey(lower_bound, upper_bound, exchangeType, country, isLand) {
 	d3v3.csv("sankey.csv", function(error, data) {
 	
 	var dataTimeTypeFiltered = data.filter(function(d) {
-		if (exchangeType) {
+		if (exchangeType != "All") {
 			return d.year >= lower_bound && d.year <= upper_bound && d.procedure == exchangeType;
         }
         else {
@@ -1156,11 +1245,12 @@ function updateSankey(lower_bound, upper_bound, exchangeType, country, isLand) {
 	});
 }
 
-lower = 1820
-upper = 1830
-var countryOfInterestSan = "United Kingdom";
 
-updateSankey(lower, upper, exchangeType, countryOfInterestSan, isPeople);
+//lower = 1820
+//upper = 1830
+//var countryOfInterestSan = "United Kingdom";
+
+//updateSankey(lower, upper, exchangeType, countryOfInterestSan, isPeople);
 
 /*
 isPeople = false;
