@@ -116,7 +116,6 @@ var sankey = body.append("div")
   .attr("class", "sankey")
 
 var base_g = svg.append("g");
-var top_g = svg.append("g");
 
 var continentClusterCodes = {
 	"Africa": 1,
@@ -346,7 +345,7 @@ function main(error, worldContinents, worldCountries, names, exchange) {
   var clusterSimulation2 = d3.forceSimulation()
     .force('attract', d3.forceAttract()
       .target([width/2, height/2])
-      .strength(0.02) // -.00005*data.length + 0.03)
+      .strength(-.000055*data.length + 0.035)
     )
     .force('collide', function(alpha) {
       return collide(alpha, data)
@@ -358,8 +357,8 @@ function main(error, worldContinents, worldCountries, names, exchange) {
   d3.select("#toggle-cluster")
     .on("click", function() {
       console.log("centroids when cluster toggled");
-      console.log(centroids);
-      return toggleCluster(continent_gs, clustered, data, centroids);
+      var clusteredCentroids = d3.selectAll(".centroid");
+      return toggleCluster(continent_gs, clustered, clusteredCentroids.data(), clusteredCentroids);
     });
 
   function toggleCluster(continent_gs, clustered, data, clusteredCentroids) {
@@ -376,20 +375,21 @@ function main(error, worldContinents, worldCountries, names, exchange) {
 
   function startCluster(data) {
     console.log("cluster called");
-    // console.log(data);
     continent_gs.transition()    
             .duration(500)    
             .style("opacity", "0");
     clusterSimulation
       .nodes(data)
       .alpha(1)
+      .alphaMin(0.05)
       .force('collide', function(alpha) {
         return collide(alpha, data)
       })
       .restart()
       .on("end", function(d) {
         return startGroupCluster(data);
-      });
+      })
+      .tick(10);
 
     clustered = true;
   }
@@ -397,7 +397,7 @@ function main(error, worldContinents, worldCountries, names, exchange) {
   function startGroupCluster(data) {
     console.log("started group");
     console.log("Ratio:");
-    console.log(0.02) // -.00005*data.length + 0.03);
+    console.log(-.00005*data.length + 0.04);  // needs more force when there are fewer points
     clusterSimulation2
       .nodes(data)
       .alpha(1)
@@ -406,9 +406,9 @@ function main(error, worldContinents, worldCountries, names, exchange) {
       })
       .restart();
 
-    svg.transition()
+    /* svg.transition()
       .duration(750)
-      .call( zoom.transform, d3.zoomIdentity.translate(-width/2,-height/2).scale(2));
+      .call( zoom.transform, d3.zoomIdentity.translate(-width/2,-height/2).scale(2)); */
   }
 
   function startUncluster(clusteredCentroids, continent_gs) {
@@ -463,20 +463,17 @@ function main(error, worldContinents, worldCountries, names, exchange) {
 
     // create new centroids
     newCentroids.enter().append("circle")
-      .merge(newCentroids) // merge existing and new...?
+      .merge(newCentroids) // merge existing and new
       .attr("class", "centroid")
       .attr("fill", function(d) { return "#a0a0f0"; })
       .attr("r", function(d) { return d.radius; })
       .attr("cx", function(d) { 
-        if (!clustered) {
-          d.x = d.orig_x; 
-        }
+        d.x = d.orig_x; // reset initial x-coordinate
         return d.orig_x;
       })
       .attr("cy", function(d) { 
-        if (!clustered) {
-          d.y = d.orig_y; 
-        }
+        console.log(clustered);
+        d.y = d.orig_y; // reset initial y-coordinate
         return d.orig_y;
       })
       .attr("stroke", function(d) { return d.color; })
@@ -543,11 +540,13 @@ function countryClicked(d) {
       var centroid = d3.select(this);
       // if the centroid is the country that was clicked, highlight
       if (centroid.attr("cx") == d.x && centroid.attr("cy") == d.y && !countrySelected) {
+        // console.log("case 1");
         countrySelected = true;
         centroid
             .attr("stroke", "#f00")
             .attr("stroke-width", "5");
       } else if (centroid.attr("cx") == d.x && centroid.attr("cy") == d.y) {
+        // console.log("case 2");
         countrySelected = false;
         centroid
             .attr("stroke", centroid.data()[0].color)
