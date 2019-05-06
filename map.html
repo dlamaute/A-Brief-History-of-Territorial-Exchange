@@ -194,7 +194,7 @@ function main(error, worldContinents, worldCountries, names, exchange) {
   			} else {
   				d.region = "North America";
   			}
-        d.radius = Math.floor(Math.random()*10); // irl to be determined by exchange data
+        d.radius = Math.floor(Math.random()*10 + 1); // irl to be determined by exchange data
         /* debug for identifying separate clusters */
         switch(continentClusterCodes[d.region]) {
           case 1:
@@ -338,23 +338,22 @@ function main(error, worldContinents, worldCountries, names, exchange) {
   )
   .force("collide", function(alpha) {
     return collide(alpha, data)
-  })
-  //  .alphaDecay(0.1)
+  })  
   .stop()
   .on('tick', clusterTick)
-  .nodes(centroidItems);
+  .nodes(data);
 
   var clusterSimulation2 = d3.forceSimulation()
     .force('attract', d3.forceAttract()
       .target([width/2, height/2])
-      .strength(0.05)
+      .strength(0.02) // -.00005*data.length + 0.03)
     )
     .force('collide', function(alpha) {
       return collide(alpha, data)
     })
     .stop()
     .on('tick', clusterTick)
-    .nodes(centroidItems);
+    .nodes(data);
 
   d3.select("#toggle-cluster")
     .on("click", function() {
@@ -363,13 +362,13 @@ function main(error, worldContinents, worldCountries, names, exchange) {
       return toggleCluster(continent_gs, clustered, data, centroids);
     });
 
-  function toggleCluster(continent_gs, clustered, data, centroids) {
+  function toggleCluster(continent_gs, clustered, data, clusteredCentroids) {
     if (!clustered) {
       startCluster(data);
       d3.select("#toggle-cluster")
         .html("Switch to Geographical View");
     } else {
-      startUncluster(centroids, continent_gs);
+      startUncluster(clusteredCentroids, continent_gs);
       d3.select("#toggle-cluster")
         .html("Switch to Comparison View");
     }
@@ -397,6 +396,8 @@ function main(error, worldContinents, worldCountries, names, exchange) {
 
   function startGroupCluster(data) {
     console.log("started group");
+    console.log("Ratio:");
+    console.log(0.02) // -.00005*data.length + 0.03);
     clusterSimulation2
       .nodes(data)
       .alpha(1)
@@ -410,7 +411,7 @@ function main(error, worldContinents, worldCountries, names, exchange) {
       .call( zoom.transform, d3.zoomIdentity.translate(-width/2,-height/2).scale(2));
   }
 
-  function startUncluster(centroids, continent_gs) {
+  function startUncluster(clusteredCentroids, continent_gs) {
     console.log("uncluster called");
     clusterSimulation2.stop();
     clusterSimulation.stop();
@@ -419,8 +420,8 @@ function main(error, worldContinents, worldCountries, names, exchange) {
               .duration(500)    
               .style("opacity", "1");
     console.log("centroids when unclustered:")
-    console.log(centroids);
-    centroids.transition()
+    console.log(clusteredCentroids);
+    clusteredCentroids.transition()
       .duration(500)
       .attr("cx", function(d) { return d.orig_x; })
       .attr("cy", function(d) { return d.orig_y; });
@@ -434,7 +435,7 @@ function main(error, worldContinents, worldCountries, names, exchange) {
 
   /* Test remove this later w/ assoc. button. Data change will be triggered by timeline rather than button in final */
   var newData = centroidItems.slice(1,10);
-  var newData2 = centroidItems.slice(5,17);
+  var newData2 = centroidItems.slice(5,110);
 
   d3.select("#change-data")
     .on("click", function() {
@@ -470,13 +471,13 @@ function main(error, worldContinents, worldCountries, names, exchange) {
         if (!clustered) {
           d.x = d.orig_x; 
         }
-        return d.x;
+        return d.orig_x;
       })
       .attr("cy", function(d) { 
         if (!clustered) {
           d.y = d.orig_y; 
         }
-        return d.y;
+        return d.orig_y;
       })
       .attr("stroke", function(d) { return d.color; })
       .attr("stroke-width", "2")

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.background {
+  fill: none;
+  pointer-events: all; 
+}
+
+.feature {
+  fill: #ccc;
+  cursor: pointer;
+}
+
+.mesh {
+  fill: none;
+  stroke: #fff;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.centroid {
+  cursor: pointer;
+}
+
+.contCentroid {
+  stroke: #000;
+  stroke-width: 0.1;
+  cursor: pointer;
+}
+
+.hidden {
+  display: none;
+}
+
+.tooltip { 
+  position: absolute;     
+  text-align: center;       
+  padding: 2px 5px;       
+  font: 12px sans-serif;    
+  background: lightgrey; 
+  border: 0px;    
+  border-radius: 8px;     
+  pointer-events: none;     
+}
+
+#toggleClusterDiv {
+  display: block;
+  margin: 50px;
+}
+
+#map {
+  display: block;
+  margin: 50px;
+}
+
+</style>
+
+<body>
+  <div id="toggleClusterDiv">
+    <button id="toggle-cluster" type="button">Switch to Comparison View</button>
+    <button id="change-data" type="button">Change Data</button> <!-- test button, do not include in final -->
+  </div>
+  <div id="map"></div>
+</body>
+
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="https://d3js.org/topojson.v2.min.js"></script>
+<script src="https://d3js.org/d3-queue.v3.min.js"></script>
+<script src="https://unpkg.com/d3-force-attract@latest"></script>
+<script src="https://unpkg.com/d3-force-cluster@latest"></script>
+<script>
+
+var body = d3.select("body");
+
+var width = 960,
+    height = 700,
+    padding = 8, // distance between same-color nodes
+    clusterPadding = 10, // distance between different-color nodes
+    maxRadius = height*0.1, // should this vary with the current node options?
+    active = d3.select(null);
+
+var projection = d3.geoMercator()
+    .scale(150)
+    .translate([width / 2, height / 2]);
+  
+// var zoom = d3.zoom().on("zoom", zoomed);
+var path = d3.geoPath().projection(projection);
+
+var clustered = false;
+var clusterSimulation;
+var unclusterSimulation;
+var continent_gs;
+var continentClusterRadii = {};
+var countrySelected;
+
+// Define the div for the tooltip
+let tooltipDiv = body.append("div") 
+    .attr("class", "tooltip")       
+    .style("opacity", 0);
+
+var svg = body.select("#map").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("stroke", "#ccc")
+    .attr("stroke-width", 1)
+    // .on("click", stopped, true);
+
+svg.append("rect")
+    .attr("class", "background")
+    .attr("width", width)
+    .attr("height", height)
+    // .on("click", reset);
+
+var sankey = body.append("div")
+  .attr("class", "sankey")
+
+var base_g = svg.append("g");
+
+var continentClusterCodes = {
+  "Africa": 1,
+  "Asia": 2,
+  "Europe": 3,
+  "North America": 4,
+  "South America": 5,
+  "Oceania": 6,
+  "Antarctica": 7
+}
+
+var centroidItems = [];
+var continentCentroids = {};
+  
+// svg.call(zoom); // delete this line to disable free zooming
+
+// TEST
+var dataChanged = 0;
+// END TEST
+
+d3.queue()
+  .defer(d3.json, "world-continents.json")
+  .defer(d3.json, "world-countries.json")
+  .defer(d3.csv, "world_country_names.csv")
+  .defer(d3.csv, "wrangle.csv")
+  .await(main);
+
+function main(error, worldContinents, worldCountries, names, exchange) {
+  if (error) throw error;
+
+  var continentsData = topojson.feature(worldContinents, worldContinents.objects.continent).features;
+  var countriesData = topojson.feature(worldCountries, worldCountries.objects.countries).features;
+
+  // set up continents
+  /* continent_gs = base_g.append("g")
+    .attr("class", "feature continent")
+    .selectAll(".feature")
+    .data(continentsData)
+    .enter()
+    .append("path")
+    .attr("name", function(d) {return d.properties.continent;})
+    // .on("click", continentClicked)
+    .attr("d", path);
+
+  base_g.append("path")
+    .datum(topojson.mesh(worldContinents, worldContinents.objects.continent, function(a, b) { return a !== b; }))
+    .attr("class", "mesh")
+    .attr("d", path);
+
+  for (var c of continentsData) {
+    var centroid = path.centroid(c);
+    continentCentroids[c.properties.continent] = {
+        x: path.centroid(c)[0],
+        y: path.centroid(c)[1],
+        radius: 0,
+        force: (.001 * Math.sqrt((path.centroid(c)[0] - width/2)**2 + path.centroid(c)[1] - height/2)**2).toFixed(3),
+        forceX: (.0001 * Math.abs(path.centroid(c)[0] - width/2)).toFixed(3),
+        forceY: (.0001 * Math.abs(path.centroid(c)[1] - height/2)).toFixed(3)
+    };
+  } */
+
+  // filter exchange here to get countryExchangeData
+  var countryExchangeData = {} // incorporate three-letter code
+
+  // set up countries
+  countriesData.filter(function(d) {
+    return names.some(function(n) {
+      if (parseInt(d.id) == parseInt(n.id)) {
+        d.name = n.name;
+        d.nameCode = n.alpha_3;
+        if (n.region != "Americas" && d.name != "Antarctica") {
+          d.region = n.region;
+        } else if (d.name == "Antarctica") { 
+          d.region = "Antarctica";
+        } else if (n.subregion == "South America") { 
+          d.region = n.subregion; 
+        } else {
+          d.region = "North America";
+        }
+        d.radius = Math.floor(Math.random()*10 + 1); // irl to be determined by exchange data
+        /* debug for identifying separate clusters */
+        switch(continentClusterCodes[d.region]) {
+          case 1:
+            d.color = "#ffff00";
+            break;
+          case 2:
+            d.color = "#00ffff";
+            break;
+          case 3:
+            d.color = "#00ff00";
+            break;
+          case 4:
+            d.color = "#0000ff";
+            break;
+          case 5:
+            d.color = "#007700";
+            break;
+          case 6:
+            d.color = "#ff00ff";
+            break;
+          case 7:
+            d.color = "#770000";
+            break;
+          default:
+            d.color = "#ccc";
+        }
+        /* end debug */
+      }
+    });
+
+      // for when countryExchangeData is implemented
+      /* countryExchangeData.some(function(e) {
+        if (d.nameCode = e.nameCode) {
+          d.radius = 5;
+          d.color = #ab1bab;
+        }
+      }); */
+  });
+
+  centroidItems = countriesData.map(function(feature) {
+    var centroidItem = {
+      x: path.centroid(feature)[0],
+      y: path.centroid(feature)[1],
+      orig_x: path.centroid(feature)[0],
+      orig_y: path.centroid(feature)[1],
+      radius: feature.radius,
+      name: feature.name,
+      color: feature.color,
+      cluster: continentClusterCodes[feature.region],
+      region: feature.region
+    };
+    return centroidItem;
+  });
+
+  var continentNodes = [];
+  for (var continent of Object.keys(continentClusterCodes)) {
+    var children = []
+    for (var item of centroidItems) {
+      if (item.cluster == continentClusterCodes[continent]) {
+        children.push(item);
+      }
+    }
+    continentNodes.push({"name": continent, "fill": "rgba(0,0,0,0)", "color": "rgba(0,0,0,0)", "strokeWidth": 1, "children": children}); 
+  }
+  otherLand = {"name": "Other"}
+  otherChildren = []
+  for (var item of centroidItems) {
+    if (!(item.region in continentClusterCodes)) {
+      console.log(item);
+    }
+  }
+
+  var data = {"name": "All", "fill": "rgba(255,255,255,0)", "color": "rgba(0,0,0,0)", "strokeWidth": 0, "children": continentNodes};
+  // console.log('hey');
+  // console.log(continentNodes);
+
+  /* var centroidElements = base_g.selectAll(".centroid")
+    .data(centroidItems)
+    .enter()
+    .append("g")
+    .attr("class", "centroid");
+
+  var centroids = centroidElements.append("circle")
+    .attr("fill", function(d) { return "#a0a0f0"; })
+    .attr("r", function(d) { return d.radius; })
+    .attr("cx", function(d) { return d.x; })
+    .attr("cy", function(d) { return d.y; })
+    .attr("stroke", function(d) { return d.color; })
+    .attr("stroke-width", "2")
+    // .on("click", countryClicked)
+    .on("mouseover", function(d) {
+        tooltipDiv.transition()    
+            .duration(200)    
+            .style("opacity", 1);    
+        tooltipDiv.html(d.name)  
+            .style("left", (d3.event.pageX) + "px")   
+            .style("top", (d3.event.pageY - 28) + "px");  
+        })          
+    .on("mouseout", function(d) {   
+        tooltipDiv.transition()    
+            .duration(500)    
+            .style("opacity", 0); 
+    }); */
+
+  /* Let's Try Packing */
+  var packLayout = d3.pack()
+    .size([width, height])
+    .padding(3);
+
+  var rootNode = d3.hierarchy(data);
+  rootNode.sum(function(d) {
+    return d.radius;
+  });
+  packLayout(rootNode);
+  console.log(rootNode.descendants());
+
+  base_g.selectAll("circle")
+    .data(rootNode.descendants())
+    .enter()
+    .append("circle")
+    .attr('cx', function(d) { return d.x; })
+    .attr('cy', function(d) { return d.y; })
+    .attr('r', function(d) { return d.r; })
+    .attr("stroke", function(d) { return d.color; })
+    .attr("stroke-width", function(d) { return d.strokeWidth; });
+  }
+</script>
