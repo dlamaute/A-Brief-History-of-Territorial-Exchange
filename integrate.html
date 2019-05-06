@@ -1047,6 +1047,10 @@ function updateSankey(lower_bound, upper_bound, exchangeType, country, isLand) {
 	
 	//var periodLength = upper_bound - lower_bound;
 	//heightSan = (300 - marginSan.top - marginSan.bottom) * periodLength / 30;
+  var length = d3.select("#chart")["_groups"][0][0].children.length
+  if (length > 3) {
+    d3.select("#chart")["_groups"][0][0].children[3].remove();
+  }
 
 	var units = "km^2";
 	if (isLand == false) {
