@@ -345,7 +345,7 @@ function main(error, worldContinents, worldCountries, names, exchange) {
   var clusterSimulation2 = d3.forceSimulation()
     .force('attract', d3.forceAttract()
       .target([width/2, height/2])
-      .strength(-.000055*data.length + 0.035)
+      .strength(-.000055*data.length + 0.038)
     )
     .force('collide', function(alpha) {
       return collide(alpha, data)
@@ -356,14 +356,13 @@ function main(error, worldContinents, worldCountries, names, exchange) {
 
   d3.select("#toggle-cluster")
     .on("click", function() {
-      console.log("centroids when cluster toggled");
       var clusteredCentroids = d3.selectAll(".centroid");
-      return toggleCluster(continent_gs, clustered, clusteredCentroids.data(), clusteredCentroids);
+      return toggleCluster(continent_gs, clustered, clusteredCentroids);
     });
 
-  function toggleCluster(continent_gs, clustered, data, clusteredCentroids) {
+  function toggleCluster(continent_gs, clustered, clusteredCentroids) {
     if (!clustered) {
-      startCluster(data);
+      startCluster(clusteredCentroids.data());
       d3.select("#toggle-cluster")
         .html("Switch to Geographical View");
     } else {
@@ -378,10 +377,13 @@ function main(error, worldContinents, worldCountries, names, exchange) {
     continent_gs.transition()    
             .duration(500)    
             .style("opacity", "0");
+    svg.transition()
+      .duration(750)
+      .call( zoom.transform, d3.zoomIdentity.translate(0,0).scale(1));
     clusterSimulation
       .nodes(data)
       .alpha(1)
-      .alphaMin(0.05)
+      .alphaMin(0.03)
       .force('collide', function(alpha) {
         return collide(alpha, data)
       })
@@ -397,18 +399,20 @@ function main(error, worldContinents, worldCountries, names, exchange) {
   function startGroupCluster(data) {
     console.log("started group");
     console.log("Ratio:");
-    console.log(-.00005*data.length + 0.04);  // needs more force when there are fewer points
+    console.log(-.000055*data.length + 0.038);  // needs more force when there are fewer points
     clusterSimulation2
       .nodes(data)
       .alpha(1)
+      .alphaMin(0.03)
       .force('collide', function(alpha) {
         return collide(alpha, data)
       })
-      .restart();
-
-    /* svg.transition()
-      .duration(750)
-      .call( zoom.transform, d3.zoomIdentity.translate(-width/2,-height/2).scale(2)); */
+      .restart()
+      .on("end", function(d) {
+        svg.transition()
+          .duration(750)
+          .call( zoom.transform, d3.zoomIdentity.translate(-width/3,-height/3).scale(1.5));
+      });
   }
 
   function startUncluster(clusteredCentroids, continent_gs) {
