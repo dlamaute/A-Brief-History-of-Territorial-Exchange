@@ -51,6 +51,15 @@
   margin: 50px;
 }
 
+#toggle-cluster {
+  fill: #fff;
+  stroke: #ccc;
+  stroke-width: 1;
+  border-radius: 5px;
+  width: 50px;
+  height: 20px;
+}
+
 #map {
   display: block;
   margin: 50px;
@@ -60,7 +69,7 @@
 
 <body>
   <div id="toggleClusterDiv">
-    <button id="toggle-cluster" type="button">Switch to Comparison View</button>
+    <!-- <button id="toggle-cluster" type="button">Switch to Comparison View</button> -->
     <button id="change-data" type="button">Change Data</button> <!-- test button, do not include in final -->
   </div>
   <div id="map"></div>
@@ -76,7 +85,7 @@
 var body = d3.select("body");
 
 var width = 960,
-    height = 500,
+    height = 700,
     padding = 8, // distance between same-color nodes
     clusterPadding = 10, // distance between different-color nodes
     maxRadius = height*0.1, // should this vary with the current node options?
@@ -115,11 +124,13 @@ svg.append("rect")
     .attr("height", height)
     .on("click", reset);
 
-var sankey = body.append("div")
-  .attr("class", "sankey")
-
 var base_g = svg.append("g");
 var top_g = svg.append("g");
+
+/* svg.append("button")
+  .attr("id", "toggle-cluster")
+  .attr("type", "button")
+  .html("Switch to Comparison View"); */
 
 var continentClusterCodes = {
 	"Africa": 1,
@@ -168,6 +179,15 @@ function main(error, worldContinents, worldCountries, names, exchange) {
     .datum(topojson.mesh(worldContinents, worldContinents.objects.continent, function(a, b) { return a !== b; }))
     .attr("class", "mesh")
     .attr("d", path);
+
+  var toggleButtonContainer = base_g.append("g");
+
+  toggleButtonContainer.append("rect")
+    .attr("id", "toggle-cluster");
+    
+  toggleButtonContainer.append("text")
+    // .attr("x", )  TODO
+    .text("Switch to Comparison View");
 
   for (var c of continentsData) {
     var centroid = path.centroid(c);
