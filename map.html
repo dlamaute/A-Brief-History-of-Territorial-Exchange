@@ -7,6 +7,15 @@
   pointer-events: all; 
 }
 
+.clusterWaitLayer {
+  fill: #ccc;
+  fill-opacity: 0.5;
+}
+
+.clusterWaitText {
+  fill: #555;
+}
+
 .feature {
   fill: #ccc;
   cursor: pointer;
@@ -88,7 +97,8 @@ var zoom = d3.zoom().on("zoom", zoomed);
 var path = d3.geoPath().projection(projection);
 
 var clustered = false;
-var clusterSimulation;
+var clusterSimulation = d3.forceSimulation();
+var clusterSimulation2 = d3.forceSimulation();
 var unclusterSimulation;
 var continent_gs;
 var continentClusterRadii = {};
@@ -116,6 +126,7 @@ var sankey = body.append("div")
   .attr("class", "sankey")
 
 var base_g = svg.append("g");
+var top_g = svg.append("g");
 
 var continentClusterCodes = {
 	"Africa": 1,
@@ -170,10 +181,7 @@ function main(error, worldContinents, worldCountries, names, exchange) {
 		continentCentroids[c.properties.continent] = {
 			  x: path.centroid(c)[0],
 			  y: path.centroid(c)[1],
-			  radius: 0,
-        force: (.001 * Math.sqrt((path.centroid(c)[0] - width/2)**2 + path.centroid(c)[1] - height/2)**2).toFixed(3),
-        forceX: (.0001 * Math.abs(path.centroid(c)[0] - width/2)).toFixed(3),
-        forceY: (.0001 * Math.abs(path.centroid(c)[1] - height/2)).toFixed(3)
+			  radius: 0
 		};
 	}
 
@@ -237,13 +245,14 @@ function main(error, worldContinents, worldCountries, names, exchange) {
 		var centroidItem = {
 			x: path.centroid(feature)[0],
 			y: path.centroid(feature)[1],
-      orig_x: path.centroid(feature)[0],
-      orig_y: path.centroid(feature)[1],
+      origX: path.centroid(feature)[0],
+      origY: path.centroid(feature)[1],
 			radius: feature.radius,
 			name: feature.name,
 			color: feature.color,
 			cluster: continentClusterCodes[feature.region],
-			region: feature.region
+			region: feature.region,
+      groupClustersForce: (.0001 * Math.sqrt((path.centroid(feature)[0] - width/2)**2 + (path.centroid(feature)[1] - height/2)**2)).toFixed(3)
 		};
 		return centroidItem;
   });
@@ -310,49 +319,6 @@ function main(error, worldContinents, worldCountries, names, exchange) {
             .duration(500)    
             .style("opacity", 0); 
     }); */
-  var data = centroidItems; // set initial data
-
-  clusterSimulation = d3.forceSimulation()
-  .force("x", d3.forceX()
-    .strength(0.03)
-    .x(function(d) {
-      if(d.region) {
-        var cluster = continentCentroids[d.region];
-        return cluster.x;
-      } else {
-        return d.x;
-      }
-    })
-  )
-  .force("y", d3.forceY()
-    .strength(0.03)
-    .y(function(d) {
-      if(d.region) {
-        var cluster = continentCentroids[d.region];
-        return cluster.y;
-      } else {
-        return d.y;
-      }
-    })
-  )
-  .force("collide", function(alpha) {
-    return collide(alpha, data)
-  })  
-  .stop()
-  .on('tick', clusterTick)
-  .nodes(data);
-
-  var clusterSimulation2 = d3.forceSimulation()
-    .force('attract', d3.forceAttract()
-      .target([width/2, height/2])
-      .strength(-.000055*data.length + 0.038)
-    )
-    .force('collide', function(alpha) {
-      return collide(alpha, data)
-    })
-    .stop()
-    .on('tick', clusterTick)
-    .nodes(data);
 
   d3.select("#toggle-cluster")
     .on("click", function() {
@@ -374,20 +340,70 @@ function main(error, worldContinents, worldCountries, names, exchange) {
 
   function startCluster(data) {
     console.log("cluster called");
-    continent_gs.transition()    
-            .duration(500)    
-            .style("opacity", "0");
+    var clusterWaitLayer = top_g.append("rect")
+      .attr("class", "clusterWaitLayer")
+      .attr("width", width)
+      .attr("height", height);
+
+    var clusterWaitText = top_g.append("text")
+      .attr("class", "clusterWaitText")
+      .attr("dx", width/2)
+      .attr("dy", height/2)
+      .attr("font-size", "48pt")
+      .attr("font-family", "sans-serif")
+      .attr("text-anchor", "middle")
+      .text("Clustering...");
+
     svg.transition()
       .duration(750)
       .call( zoom.transform, d3.zoomIdentity.translate(0,0).scale(1));
+
+    base_g.selectAll(".centroid")
+      .attr("cx", function(d) { 
+        d.x = d.origX; // reset initial x-coordinate
+        return d.origX;
+      })
+      .attr("cy", function(d) { 
+        d.y = d.origY; // reset initial y-coordinate
+        return d.origY;
+      });
+
+    data.forEach(function(d) {
+      if (d.region == "Oceania") {
+        d.y += 200;
+      }
+    });
     clusterSimulation
       .nodes(data)
       .alpha(1)
-      .alphaMin(0.03)
+      .alphaMin(0.3)
+      .force("x", d3.forceX()
+        .strength(0.03)
+        .x(function(d) {
+          if(d.region) {
+            var cluster = continentCentroids[d.region];
+            return cluster.x;
+          } else {
+            return d.x;
+          }
+        })
+      )
+      .force("y", d3.forceY()
+        .strength(0.03)
+        .y(function(d) {
+          if(d.region) {
+            var cluster = continentCentroids[d.region];
+            return cluster.y;
+          } else {
+            return d.y;
+          }
+        })
+      )
       .force('collide', function(alpha) {
         return collide(alpha, data)
       })
       .restart()
+      .on('tick', clusterTick)
       .on("end", function(d) {
         return startGroupCluster(data);
       })
@@ -397,21 +413,30 @@ function main(error, worldContinents, worldCountries, names, exchange) {
   }
 
   function startGroupCluster(data) {
-    console.log("started group");
-    console.log("Ratio:");
-    console.log(-.000055*data.length + 0.038);  // needs more force when there are fewer points
+    console.log("started group"); 
+    continent_gs.transition()    
+            .duration(500)    
+            .style("opacity", "0");
     clusterSimulation2
       .nodes(data)
       .alpha(1)
-      .alphaMin(0.03)
+      .alphaMin(0.08)
+      .force('attract', d3.forceAttract()
+        .target([width/2, height/2])
+        .strength(-.00013158*data.length + 0.05132) // needs more force when there are fewer points
+      )
       .force('collide', function(alpha) {
         return collide(alpha, data)
       })
       .restart()
+      .on("tick", clusterTick)
       .on("end", function(d) {
         svg.transition()
           .duration(750)
-          .call( zoom.transform, d3.zoomIdentity.translate(-width/3,-height/3).scale(1.5));
+          .call(zoom.transform, d3.zoomIdentity.translate(-width/2,-height/2).scale(2))
+        console.log("ended");
+        top_g.selectAll(".clusterWaitLayer").remove();
+        top_g.selectAll(".clusterWaitText").remove();
       });
   }
 
@@ -427,17 +452,17 @@ function main(error, worldContinents, worldCountries, names, exchange) {
     console.log(clusteredCentroids);
     clusteredCentroids.transition()
       .duration(500)
-      .attr("cx", function(d) { return d.orig_x; })
-      .attr("cy", function(d) { return d.orig_y; });
+      .attr("cx", function(d) { return d.origX; })
+      .attr("cy", function(d) { return d.origY; });
 
     svg.transition()
       .duration(750)
-      .call( zoom.transform, d3.zoomIdentity.translate(0,0).scale(1));
+      .call(zoom.transform, d3.zoomIdentity.translate(0,0).scale(1));
 
     clustered = false;
   }
 
-  /* Test remove this later w/ assoc. button. Data change will be triggered by timeline rather than button in final */
+  /* Test: remove this later w/ assoc. button. Data change will be triggered by timeline rather than button in final */
   var newData = centroidItems.slice(1,10);
   var newData2 = centroidItems.slice(5,110);
 
@@ -472,13 +497,13 @@ function main(error, worldContinents, worldCountries, names, exchange) {
       .attr("fill", function(d) { return "#a0a0f0"; })
       .attr("r", function(d) { return d.radius; })
       .attr("cx", function(d) { 
-        d.x = d.orig_x; // reset initial x-coordinate
-        return d.orig_x;
+        d.x = d.origX; // reset initial x-coordinate
+        return d.origX;
       })
       .attr("cy", function(d) { 
         console.log(clustered);
-        d.y = d.orig_y; // reset initial y-coordinate
-        return d.orig_y;
+        d.y = d.origY; // reset initial y-coordinate
+        return d.origY;
       })
       .attr("stroke", function(d) { return d.color; })
       .attr("stroke-width", "2")
