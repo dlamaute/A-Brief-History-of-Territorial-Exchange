@@ -153,7 +153,8 @@ h1 {
 
 .right-buttons {
   /* position: absolute; */
-  left: 80%;
+  /* left: 80%; */
+  /* margin-right: 5%; */
   top: 25px;
   display: inline-block;
   /* z-index: 2; */
@@ -181,6 +182,7 @@ h1 {
   display: block;
   margin-left: 5%;
   margin-right: 5%;
+  margin-bottom: 50px;
   width: 90%;
 }
   
@@ -200,6 +202,11 @@ h1 {
 .b_clicked {
 	background-color: lightgray;
 }
+
+.custom-select {
+  margin-right: 5%;
+}
+
 
 </style>
 
@@ -223,9 +230,10 @@ h1 {
     <button type="button" id="button5" class="btn btn-default" onClick="updateGains(2);">Net</button>
   </div>
   <div class="right-buttons" id="exchanges"></div>
+  <div>Number of Exchanges</div>
   <svg width="960" height="100" font-family="sans-serif" font-size="10" text-anchor="middle" id="svg1"></svg>
 </div>
-<div id="map-div"></div>
+<div id="map"></div>
 
 </body>
 	
@@ -237,7 +245,6 @@ h1 {
 <script>
 
 var body = d3.select("body");
-var mapDiv = d3.select("#map-div");
 
 var lower = 1815;
 var upper = 2016;
@@ -257,65 +264,72 @@ var svg1 = d3.select("#svg1"),
     height = +svg1.attr("height") - margin.top - margin.bottom,
     height2 = +svg1.attr("height") - margin2.top - margin2.bottom;
 
-var width = 960,
-    height = 500,
-    padding = 1.5,
-    clusterPadding = 6,
-    maxRadius = height*0.1, // this should actually vary with the current node options
-    active = d3.select(null);
-
 body.attr("width", (width + 100).toString() + "px").attr("height", (height + 50).toString() + "px");
+
+
+/* For the Map */
+var mapWidth = 960,
+    mapHeight = 700,
+    nodePadding = 8, // distance between same-color nodes
+    clusterPadding = 10, // distance between different-color nodes
+    maxRadius =mapHeight*0.1, // should this vary with the current node options?
+    active = d3.select(null);
 
 var projection = d3.geoMercator()
     .scale(150)
-    .translate([width / 2, height / 2]);
+    .translate([mapWidth / 2,mapHeight / 2]);
   
 var zoom = d3.zoom().on("zoom", zoomed);
 var path = d3.geoPath().projection(projection);
 
-var countryMode = false;  // delete?
-var simulation;
-
+var clustered = false;
+var clusterSimulation = d3.forceSimulation();
+var clusterSimulation2 = d3.forceSimulation();
+var continent_gs;
+var countrySelected;
 
 // Define the div for the tooltip
 let tooltipDiv = body.append("div") 
     .attr("class", "tooltip")       
     .style("opacity", 0);
 
-var svg = mapDiv.append("svg")
-    .attr("class", "base-svg")
-    .attr("width", width)
-    .attr("height", height)
+var svg = body.select("#map").append("svg")
+    .attr("width", mapWidth)
+    .attr("height",mapHeight)
+    .attr("stroke", "#ccc")
+    .attr("stroke-width", 1)
     .on("click", stopped, true);
 
 svg.append("rect")
     .attr("class", "background")
-    .attr("width", width)
-    .attr("height", height)
+    .attr("width", mapWidth)
+    .attr("height",mapHeight)
     .on("click", reset);
-
-// Add in Sankey variable
-var sankey = body.append("div")
-  .attr("class", "sankey")
 
 var base_g = svg.append("g");
 var top_g = svg.append("g");
 
 var continentClusterCodes = {
-	"Africa": 1,
-	"Asia": 2,
-	"Europe": 3,
-	"North America": 4,
-	"South America": 5,
-	"Oceania": 6,
-	"Antarctica": 7
+  "Africa": 1,
+  "Asia": 2,
+  "Europe": 3,
+  "North America": 4,
+  "South America": 5,
+  "Oceania": 6,
+  "Antarctica": 7
 }
 
 var centroidItems = [];
 var continentCentroids = {};
   
-svg.call(zoom); // delete this line to disable free zooming
+svg.call(zoom);
+/* End map initialization section */
 
+// Add in Sankey variable
+var sankey = body.append("div")
+  .attr("class", "sankey")
+
+/* Load in all the files */
 d3.queue()
 	.defer(d3.json, "world-continents.json")
 	.defer(d3.json, "world-countries.json")
@@ -371,6 +385,21 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
     .attr("class", "mesh")
     .attr("d", path);
 
+  var toggleButtonContainer = svg.append("g");
+
+  toggleButtonContainer.append("rect")
+    .attr("id", "toggle-cluster")
+    .attr("x", 15)
+    .attr("y", 15)
+    .attr("rx", 5);
+    
+  toggleButtonContainer.append("text")
+    .attr("id", "toggle-cluster-text")
+    .attr("dx", 115)
+    .attr("dy", 30)
+    .attr("text-anchor", "middle")
+    .text("Switch to Comparison View");
+
   for (var c of continentsData) {
     var centroid = path.centroid(c);
 		continentCentroids[c.properties.continent] = {
@@ -405,7 +434,7 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
   				d.region = "North America";
   			}
         d.radius = Math.floor(Math.random()*10); // irl to be determined by exchange data
-        /* debug for identifying separate clusters */
+      // colors for identifying separate clusters
         switch(continentClusterCodes[d.region]) {
           case 1:
             d.color = "#ffff00";
@@ -431,26 +460,32 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
           default:
             d.color = "#ccc";
         }
-        /* end debug */
   		}
   	});
+
+    // for when countryExchangeData is implemented
+      /* countryExchangeData.some(function(e) {
+        if (d.nameCode == e.nameCode) {
+          d.radius = 5;
+          d.color = #ab1bab;
+        }
+      }); */
+
 	});
 
-
-  var continents = base_g.selectAll(".continent");
-  var countries = base_g.selectAll(".country");  // remove
-
   centroidItems = countriesData.map(function(feature) {
-		var centroidItem = {
-			x: path.centroid(feature)[0],
-			y: path.centroid(feature)[1],
-			radius: feature.radius,
-			name: feature.name,
-			color: feature.color,
-			cluster: continentClusterCodes[feature.region],
-			region: feature.region
-		};
-		return centroidItem;
+    var centroidItem = {
+      x: path.centroid(feature)[0],
+      y: path.centroid(feature)[1],
+      origX: path.centroid(feature)[0],
+      origY: path.centroid(feature)[1],
+      radius: feature.radius,
+      name: feature.name,
+      color: feature.color,
+      cluster: continentClusterCodes[feature.region],
+      region: feature.region
+    };
+    return centroidItem;
   });
 
   simulation = d3.forceSimulation(centroidItems)
