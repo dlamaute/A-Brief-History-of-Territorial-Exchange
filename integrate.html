@@ -14,6 +14,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.js"></script>
 <style>
 
+html, body {
+  overflow: auto;
+}
+
 .background {
   fill: none;
   pointer-events: all; 
@@ -214,6 +218,10 @@ h1 {
   margin-right: 5%;
 }
 
+.content {
+  margin-left: 10%;
+}
+
 
 </style>
 
@@ -224,26 +232,28 @@ h1 {
   <div id="countries"></div>
 </div>
 
-<div id="button-row">
-  <div id="story-buttons" class="btn-group" role="group" aria-label="people">
-      <button type="button" id="button1" class="btn btn-default" onClick="updateData(false);">Land</button>
-      <button type="button" id="button2" class="btn btn-default" onClick="updateData(true);">People</button>
-  </div>
+  <div class="content">
+    <div id="button-row">
+      <div id="story-buttons" class="btn-group" role="group" aria-label="people">
+          <button type="button" id="button1" class="btn btn-default" onClick="updateData(false);">Land</button>
+          <button type="button" id="button2" class="btn btn-default" onClick="updateData(true);">People</button>
+      </div>
 
-  <div id="other-story-buttons" class="btn-group" role="group" aria-label="people">
-    <button type="button" id="button3" class="btn btn-default" onClick="updateGains(0);">Gains</button>
-    <button type="button" id="button4" class="btn btn-default" onClick="updateGains(1);">Losses</button>
-    <button type="button" id="button5" class="btn btn-default" onClick="updateGains(2);">Net</button>
+      <div id="other-story-buttons" class="btn-group" role="group" aria-label="people">
+        <button type="button" id="button3" class="btn btn-default" onClick="updateGains(0);">Gains</button>
+        <button type="button" id="button4" class="btn btn-default" onClick="updateGains(1);">Losses</button>
+        <button type="button" id="button5" class="btn btn-default" onClick="updateGains(2);">Net</button>
+      </div>
+      <div class="right-buttons" id="exchanges"></div>
+      <div id="yrs"> - </div>
+      <svg width="960" height="100" font-family="sans-serif" font-size="10" text-anchor="middle" id="timelineSvg"></svg>
+    </div>
+    <p id="chart"></p>
+    <div id="map"></div>
   </div>
-  <div class="right-buttons" id="exchanges"></div>
-  <div id="yrs"> - </div>
-  <svg width="960" height="100" font-family="sans-serif" font-size="10" text-anchor="middle" id="timelineSvg"></svg>
-</div>
-<div id="map"></div>
 
 </body>
 	
-<p id="chart">
 
 <script src="d3.v3.js"></script>
 <script src="sankey.js"></script>
@@ -1131,9 +1141,9 @@ function updateBubbles(newData, type, isNet) {
     .attr("fill", function(d) { return "#a0a0f0"; })
     .attr("r", function(d) { 
       if (type) {
-        return d.people/500000; // TODO: fix the scaling, use binning
+        return d.people/1000000; // TODO: fix the scaling, use binning
       }
-      return d.land/50000; // TODO: fix the scaling, use binning
+      return d.land/100000; // TODO: fix the scaling, use binning
     })
     .attr("cx", function(d) { 
       d.x = d.origX; // reset initial x-coordinate
@@ -1316,10 +1326,11 @@ function updateSankey(lower_bound, upper_bound, exchangeType, country, isLand) {
 		
 		///////////////////////////////
 		heightSan = (300 - marginSan.top - marginSan.bottom) * numGroups/6;
-		
 		var length = d3.select("#chart")["_groups"][0][0].children.length;
-		if (length > 3) {
-			d3.select("#chart")["_groups"][0][0].children[3].remove();
+    console.log(length);
+		if (length > 0) {
+      console.log(d3.select("#chart")["_groups"][0][0].children[0].remove());
+			//d3.select("#chart")["_groups"][0][0].children[3].remove();
 		}
 	
 		// append the svg canvas to the page
