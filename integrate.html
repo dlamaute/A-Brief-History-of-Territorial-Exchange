@@ -370,12 +370,7 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
         .attr("id", "country");
 
   var gainers = d3.map(exchangeData, function(d){return d["gainer"];}).keys();
-
-  console.log(gainers);
-
   var losers = d3.map(exchangeData, function(d){return d["loser"];}).keys();
-
-  console.log(losers);
 
   function union(setA, setB) {
     var _union = new Set(setA);
@@ -388,11 +383,7 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
     return _union;
   }
 
-  console.log(union(gainers, losers));
-
   var countries = Array.from(union(gainers, losers)).sort();
-
-  console.log(countries)
 
   countrySelect.selectAll("option")
     .data(countries)
@@ -575,7 +566,6 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
 
     // TODO: add map highlighting
     for (d of centroidItems) {
-      console.log(d.name);
       if (d.name == selected) {
         console.log(d);
       }
@@ -780,6 +770,12 @@ function countryClicked(d) {
     });
     if (selectedCountry != "") {
       var isLand = !isPeople;
+      d3.select("#country")
+        .property("value", "bob"); /*function(d) {
+          // console.log(d);
+          return "bob";
+        }) */
+        //.attr("value", selectedCountry);
       updateSankey(lower, upper, exchangeType, selectedCountry, isLand);
     }
     
