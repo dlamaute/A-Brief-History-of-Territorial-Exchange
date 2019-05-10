@@ -51,7 +51,7 @@ Cocos (Keeling) Islands,CC,CCK,166,ISO 3166-2:CC,,,,
 Colombia,CO,COL,170,ISO 3166-2:CO,Americas,South America,19,5
 Comoros,KM,COM,174,ISO 3166-2:KM,Africa,Eastern Africa,2,14
 Congo,CG,COG,178,ISO 3166-2:CG,Africa,Middle Africa,2,17
-Congo (Democratic Republic of the),CD,COD,180,ISO 3166-2:CD,Africa,Middle Africa,2,17
+Democratic Republic of the Congo,CD,COD,180,ISO 3166-2:CD,Africa,Middle Africa,2,17
 Cook Islands,CK,COK,184,ISO 3166-2:CK,Oceania,Polynesia,9,61
 Costa Rica,CR,CRI,188,ISO 3166-2:CR,Americas,Central America,19,13
 Ivory Coast,CI,CIV,384,ISO 3166-2:CI,Africa,Western Africa,2,11
@@ -195,7 +195,7 @@ Saint Kitts and Nevis,KN,KNA,659,ISO 3166-2:KN,Americas,Caribbean,19,29
 Saint Lucia,LC,LCA,662,ISO 3166-2:LC,Americas,Caribbean,19,29
 Saint Martin (French part),MF,MAF,663,ISO 3166-2:MF,Americas,Caribbean,19,29
 Saint Pierre and Miquelon,PM,SPM,666,ISO 3166-2:PM,Americas,Northern America,19,21
-Saint Vincent and the Grenadines,VC,VCT,670,ISO 3166-2:VC,Americas,Caribbean,19,29
+St. Vincent and the Grenadines,VC,VCT,670,ISO 3166-2:VC,Americas,Caribbean,19,29
 Samoa,WS,WSM,882,ISO 3166-2:WS,Oceania,Polynesia,9,61
 San Marino,SM,SMR,674,ISO 3166-2:SM,Europe,Southern Europe,150,39
 Sao Tome and Principe,ST,STP,678,ISO 3166-2:ST,Africa,Middle Africa,2,17
@@ -257,3 +257,12 @@ Yemen Arab Republic,YE,YEM,887,ISO 3166-2:YE,Asia,Western Asia,142,145
 Yemen People's Republic,YE,YEM,887,ISO 3166-2:YE,Asia,Western Asia,142,145
 Zambia,ZM,ZMB,894,ISO 3166-2:ZM,Africa,Eastern Africa,2,14
 Zimbabwe,ZW,ZWE,716,ISO 3166-2:ZW,Africa,Eastern Africa,2,14
+Cracow,,,POL,ISO 3166-2:PL,Europe,Eastern Europe,150,151
+Lucca,,,ITA,ISO 3166-2:IT,Europe,Southern Europe,150,39
+Hohenzollern Hechingen,,,DEU,ISO 3166-2:DE,Europe,Western Europe,150,155
+Tuscany,,,ITA,ISO 3166-2:IT,Europe,Southern Europe,150,39
+Transvaal,,,ZAF,ISO 3166-2:ZA,Africa,Southern Africa,2,18
+Orange Free State,,,ZAF,ISO 3166-2:ZA,Africa,Southern Africa,2,18
+Yugoslavia,,,BIH,ISO 3166-2:BA,Europe,Southern Europe,150,39
+Danzig,,,POL,ISO 3166-2:PL,Europe,Eastern Europe,150,151
+Hejaz Sultanate,,,SAU,ISO 3166-2:SA,Asia,Western Asia,142,145
