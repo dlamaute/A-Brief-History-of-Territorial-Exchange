@@ -75,16 +75,19 @@
   cursor: pointer;
 }
 
-.sankey {}
+.sankey {
+  display: block;
+  width: 100%;
+}
 
 .node2 rect {
-  cursor: move;
+  /* cursor: move; */ /* moving the parts of the diagram are nonessential to the viz */
   fill-opacity: .9;
   shape-rendering: crispEdges;
 }
 
 .node2 text {
-  pointer-events: none;
+  /* pointer-events: none; */ /* moving the parts of the diagram are nonessential to the viz */
   text-shadow: 0 1px 0 #fff;
 }
 
@@ -239,11 +242,11 @@ h1 {
   <div id="yrs"> - </div>
   <svg width="960" height="100" font-family="sans-serif" font-size="10" text-anchor="middle" id="timelineSvg"></svg>
 </div>
+<div>Amount of Exchange</div>
+<div class="sankey" id="chart"></div>
 <div id="map"></div>
 
 </body>
-	
-<p id="chart">
 
 <script src="d3.v3.js"></script>
 <script src="sankey.js"></script>
@@ -272,13 +275,24 @@ var timelineSvg = d3.select("#timelineSvg"),
 
 body.attr("width", (width + 100).toString() + "px").attr("height", (height + 50).toString() + "px");
 
+// Add in Sankey variable
+var marginSan = {top: 10, right: 10, bottom: 10, left: 68},
+    widthSan = 1038 - marginSan.left - marginSan.right,
+    heightSan = 500 - marginSan.top - marginSan.bottom;
+
+var sankeySvg = d3v3.select("#chart").append("svg")
+  .attr("width", "100%")
+  .attr("class", "hidden");
+                    
+var sankeyG = sankeySvg.append("g")
+              .attr("transform", "translate(" + marginSan.left + "," + marginSan.top + ")");
 
 /* For the Map */
 var mapWidth = 960,
     mapHeight = 700,
     nodePadding = 8, // distance between same-color nodes
     clusterPadding = 10, // distance between different-color nodes
-    maxRadius =mapHeight*0.1, // should this vary with the current node options?
+    maxRadius = mapHeight*0.1, // should this vary with the current node options?
     active = d3.select(null);
 
 var projection = d3.geoMercator()
@@ -292,7 +306,7 @@ var clustered = false;
 var clusterSimulation = d3.forceSimulation();
 var clusterSimulation2 = d3.forceSimulation();
 var continent_gs;
-var countrySelected;
+var selectedCountry = "";
 
 // Define the div for the tooltip
 let tooltipDiv = body.append("div") 
@@ -331,10 +345,6 @@ var continentCentroids = {};
 mapSvg.call(zoom);
 /* End map initialization section */
 
-// Add in Sankey variable
-var sankey = body.append("div")
-  .attr("class", "sankey")
-
 /* Load in all the files */
 d3.queue()
 	.defer(d3.json, "world-continents.json")
@@ -353,11 +363,36 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
         .attr("class", "custom-select")
         .attr("id", "country");
 
-      countrySelect.selectAll("option")
-        .data(d3.map(exchangeData, function(d){return d["gainer"];}).keys().sort())
-        .enter()
-        .append("option")
-        .text(function (d) { return d; });
+  var gainers = d3.map(exchangeData, function(d){return d["gainer"];}).keys();
+
+  console.log(gainers);
+
+  var losers = d3.map(exchangeData, function(d){return d["loser"];}).keys();
+
+  console.log(losers);
+
+  function union(setA, setB) {
+    var _union = new Set(setA);
+    for (var elem of setB) {
+      if (elem == "0") {
+        elem = "--";
+      }
+      _union.add(elem);
+    }
+    return _union;
+  }
+
+  console.log(union(gainers, losers));
+
+  var countries = Array.from(union(gainers, losers)).sort();
+
+  console.log(countries)
+
+  countrySelect.selectAll("option")
+    .data(countries)
+    .enter()
+    .append("option")
+    .text(function (d) { return d; });
 
   var exchangeSelect = d3.select("#exchanges")
         .append("div")
@@ -415,21 +450,21 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
 		};
 	}
 
-  // Update Sankey diagram if new country is selected
-  function countryChange() {
-		selected = d3.select(this).property("value");
-		var isLand = !isPeople;
-		updateSankey(lower, upper, exchangeType, selected, isLand);
-
-    // TODO: add map highlighting
-  };
-
   // set up countries
   countriesData.filter(function(d) {
   	return names.some(function(n) {
   		if (parseInt(d.id) == parseInt(n.id)) {
-  			d.name = n.name;
   			d.nameCode = n.alpha_3;
+
+        exchangeData.some(function(e) {
+            if (n.alpha_3 == e.c_a3_g) {
+              d.name = e.gainer;
+              // console.log("new name: " + d.name);
+            } else if (n.alpha_3 == e.c_a3_l) {
+              d.name = e.loser;
+            }
+        });
+
   			if (n.region != "Americas") {
   				d.region = n.region;
   			} else if (n.subregion == "South America") { 
@@ -466,15 +501,6 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
         }
   		}
   	});
-
-    // for when countryExchangeData is implemented
-      /* countryExchangeData.some(function(e) {
-        if (d.nameCode == e.nameCode) {
-          d.radius = 5;
-          d.color = #ab1bab;
-        }
-      }); */
-
 	});
 
   centroidItems = countriesData.map(function(feature) {
@@ -485,6 +511,7 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
       origY: path.centroid(feature)[1],
       radius: feature.radius,
       name: feature.name,
+      nameCode: feature.nameCode,
       color: feature.color,
       cluster: continentClusterCodes[feature.region],
       region: feature.region
@@ -534,6 +561,21 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
     });
 }
 
+// Update Sankey diagram if new country is selected
+  function countryChange() {
+    selected = d3.select(this).property("value");
+    var isLand = !isPeople;
+    updateSankey(lower, upper, exchangeType, selected, isLand);
+
+    // TODO: add map highlighting
+    for (d of centroidItems) {
+      console.log(d.name);
+      if (d.name == selected) {
+        console.log(d);
+      }
+    }
+  }
+
 function toggleCluster(continent_gs, clustered, clusteredCentroids) {
     if (!clustered) {
       startCluster(clusteredCentroids.data());
@@ -547,7 +589,6 @@ function toggleCluster(continent_gs, clustered, clusteredCentroids) {
   }
 
   function startCluster(data) {
-    console.log("cluster called");
     var clusterWaitLayer = top_g.append("rect")
       .attr("class", "clusterWaitLayer")
       .attr("width", mapWidth)
@@ -621,7 +662,6 @@ function toggleCluster(continent_gs, clustered, clusteredCentroids) {
   }
 
   function startGroupCluster(data) {
-    console.log("started group"); 
     d3.selectAll(".feature.continent").transition()    
             .duration(500)    
             .style("opacity", "0");
@@ -642,15 +682,12 @@ function toggleCluster(continent_gs, clustered, clusteredCentroids) {
         mapSvg.transition()
           .duration(750)
           .call(zoom.transform, d3.zoomIdentity.translate(-mapWidth/2,-mapHeight/2).scale(2))
-        console.log("ended");
         top_g.selectAll(".clusterWaitLayer").remove();
         top_g.selectAll(".clusterWaitText").remove();
       });
   }
 
   function startUncluster(clusteredCentroids, continent_gs) {
-    console.log("uncluster called");
-    console.log(continent_gs);
     clusterSimulation2.stop();
     clusterSimulation.stop();
     top_g.selectAll(".clusterWaitLayer").remove();
@@ -659,8 +696,6 @@ function toggleCluster(continent_gs, clustered, clusteredCentroids) {
     continent_gs.transition()    
               .duration(500)    
               .style("opacity", "1");
-    console.log("centroids when unclustered:")
-    console.log(clusteredCentroids);
     clusteredCentroids.transition()
       .duration(500)
       .attr("cx", function(d) { return d.origX; })
@@ -714,28 +749,22 @@ function continentClicked(d) {
 }
 
 function countryClicked(d) {
-  console.log("country clicked");
   var centroids = base_g.selectAll(".centroid");
   if (typeof centroids !== 'undefined') {
     // look through all the centroids
     centroids.each(function(c) {
       var centroid = d3.select(this);
       // if the centroid is the country that was clicked, highlight
-      if (centroid.attr("cx") == d.x && centroid.attr("cy") == d.y && !countrySelected) {
-        // console.log("case 1");
-        countrySelected = true;
+      if (centroid.attr("cx") == d.x && centroid.attr("cy") == d.y && selectedCountry != d.name) {
+        selectedCountry = d.name;
         centroid
             .attr("stroke", "#f00")
             .attr("stroke-width", "5");
       } else if (centroid.attr("cx") == d.x && centroid.attr("cy") == d.y) {
-        // console.log("case 2");
-        countrySelected = false;
+        selectedCountry = "";
         centroid
             .attr("stroke", centroid.data()[0].color)
             .attr("stroke-width", "2");
-        // console.log("centroid:");
-        // console.log(centroid.data()[0]);
-        // console.log(centroid.data()[0].color);
       } else {
         // make border original color if this country was not selected
         centroid
@@ -743,6 +772,11 @@ function countryClicked(d) {
             .attr("stroke-width", "2");
       }
     });
+    if (selectedCountry != "") {
+      var isLand = !isPeople;
+      updateSankey(lower, upper, exchangeType, selectedCountry, isLand);
+    }
+    
   }
 }
 
@@ -1128,19 +1162,18 @@ function updateBubbles(newData, type, isNet) {
   newCentroids.enter().append("circle")
     .merge(newCentroids) // merge existing and new
     .attr("class", "centroid")
-    .attr("fill", function(d) { return "#a0a0f0"; })
+    .attr("fill", function(d) { return "#a0a0f0"; }) // TODO: tie this to gain/loss/net
     .attr("r", function(d) { 
       if (type) {
-        return d.people/500000; // TODO: fix the scaling, use binning
+        return d.people/1000000; // TODO: fix the scaling, use binning
       }
-      return d.land/50000; // TODO: fix the scaling, use binning
+      return d.land/100000; // TODO: fix the scaling, use binning
     })
     .attr("cx", function(d) { 
       d.x = d.origX; // reset initial x-coordinate
       return d.origX;
     })
     .attr("cy", function(d) { 
-      console.log(clustered);
       d.y = d.origY; // reset initial y-coordinate
       return d.origY;
     })
@@ -1222,9 +1255,9 @@ function updateGains(value) {
 
 ///////////////SANKEY/////////////////
 
-var marginSan = {top: 10, right: 10, bottom: 10, left: 68},
+/* var marginSan = {top: 10, right: 10, bottom: 10, left: 68},
     widthSan = 1038 - marginSan.left - marginSan.right,
-    heightSan = 500 - marginSan.top - marginSan.bottom;
+    heightSan = 500 - marginSan.top - marginSan.bottom; */
 	
 function updateSankey(lower_bound, upper_bound, exchangeType, country, isLand) {
 
@@ -1321,13 +1354,8 @@ function updateSankey(lower_bound, upper_bound, exchangeType, country, isLand) {
 		if (length > 3) {
 			d3.select("#chart")["_groups"][0][0].children[3].remove();
 		}
-	
-		// append the svg canvas to the page
-		var sankeySvg = d3v3.select("#chart").append("svg")
-										.attr("width", widthSan + marginSan.left + marginSan.right)
-										.attr("height", heightSan + marginSan.top + marginSan.bottom)
-									.append("g")
-										.attr("transform", "translate(" + marginSan.left + "," + marginSan.top + ")");
+
+    sankeySvg.attr("class", "sankey");
 
 		// Set the sankey diagram properties
 		var sankey = d3v3.sankey()
@@ -1360,7 +1388,20 @@ function updateSankey(lower_bound, upper_bound, exchangeType, country, isLand) {
 			  .layout(32);
 
 		// add in the links
-		var link = sankeySvg.append("g").selectAll(".link2")
+    /* var link = d3v3.select("#sankey-svg").data(graph.links);
+
+    link.exit().remove();
+
+    link.enter()
+      .append("path")
+      .attr("class", "link2")
+      .attr("d", path)
+      .style("stroke-width", function(d) { return Math.max(1, d.dy); })
+      .sort(function(a, b) { return b.dy - a.dy; }); */
+
+    d3.selectAll(".link2").remove();
+
+		var link = sankeyG.append("g").selectAll(".link2")
 								  .data(graph.links)
 								  .enter().append("path")
 								  .attr("class", "link2")
@@ -1381,19 +1422,22 @@ function updateSankey(lower_bound, upper_bound, exchangeType, country, isLand) {
 				tName + "\n" + format(d.value) + "\n" + d.procedure + " of " + d.entity; 
 			});
 
+    d3.selectAll(".node2").remove();
+
 		// add in the nodes
-		var node = sankeySvg.append("g").selectAll(".node2")
+		var node = sankeyG.append("g").selectAll(".node2")
 								  .data(graph.nodes)
 								  .enter().append("g")
 											.attr("class", "node2")
 											.attr("transform", function(d) { 
 												return "translate(" + d.x + "," + d.y + ")"; 
 											})
-											.call(d3v3.behavior.drag()
+											/* .call(d3v3.behavior.drag()
 															   .origin(function(d) { return d; })
 															   .on("dragstart", function() { 
 																	this.parentNode.appendChild(this); })
-																.on("drag", dragmove));
+																.on("drag", dragmove)); */
+                      // Dragging doesn't add to the point of the visualization
 
 		// add the rectangles for the nodes
 		node.append("rect")
@@ -1409,6 +1453,35 @@ function updateSankey(lower_bound, upper_bound, exchangeType, country, isLand) {
 				.text(function(d) { 
 					return d.name + "\n" + format(d.value); 
 				});
+
+    // longestNodeValue = 0;
+    totalSourceNodeHeight = 0;
+    totalTargetNodeHeight = 0;
+    totalSourceNodes = 0;
+    totalTargetNodes = 0;
+    d3.selectAll(".node2").each(function(d){
+      if (d.sourceLinks.length > 0 && d.targetLinks.length == 0) {
+        totalSourceNodeHeight += d.dy;
+        totalSourceNodes += 1;
+      } else if (d.sourceLinks.length == 0 && d.targetLinks.length > 0) {
+        totalTargetNodeHeight += d.dy;
+        totalTargetNodes += 1;
+      }
+      /* if (d.dy > longestNodeValue) {
+        longestNodeValue = d.dy;
+      } */
+    });
+
+    if (totalSourceNodeHeight > totalTargetNodeHeight) {
+      totalNodeHeight = totalSourceNodeHeight;
+      totalNodes = totalSourceNodes;
+    } else {
+      totalNodeHeight = totalTargetNodeHeight;
+      totalNodes = totalTargetNodes;
+    }
+
+    sankeySvg.attr("height", (totalNodeHeight + 50*(totalSourceNodes - 1)) + "px");
+
 
 		// add in the title for the nodes
 		node.append("text")
