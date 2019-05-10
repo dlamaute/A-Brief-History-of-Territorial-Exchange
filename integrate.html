@@ -370,6 +370,7 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
         .attr("id", "country");
 
   var gainers = d3.map(exchangeData, function(d){return d["gainer"];}).keys();
+
   var losers = d3.map(exchangeData, function(d){return d["loser"];}).keys();
 
   function union(setA, setB) {
@@ -456,7 +457,6 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
         exchangeData.some(function(e) {
             if (n.alpha_3 == e.c_a3_g) {
               d.name = e.gainer;
-              // console.log("new name: " + d.name);
             } else if (n.alpha_3 == e.c_a3_l) {
               d.name = e.loser;
             }
@@ -567,7 +567,7 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
     // TODO: add map highlighting
     for (d of centroidItems) {
       if (d.name == selected) {
-        console.log(d);
+        //console.log(d);
       }
     }
   }
@@ -951,7 +951,6 @@ function updateTimeline(exchangeType) {
 function onExchangeChange() {
   var selected = d3.select(this).property("value");
     exchangeType = selected;
-    console.log(exchangeType);
     getNewData(lower, upper, isPeople, exchangeType, gains);
     updateTimeline(exchangeType);
 };
@@ -1007,7 +1006,6 @@ var check = d3.csv("wrangle.csv",
 
             var data3 = [];
             for (i=0; i < data.length; i++) {
-              //console.log(data2[i]);
               var alreadyPresent = false;
               entity2check = data[i][variable];
               index2save = null;
@@ -1049,7 +1047,6 @@ function getNewNetData(lower_bound, upper_bound, type, exchange) {
 
               var data3 = [];
               for (i=0; i < data.length; i++) {
-                //console.log(data2[i]);
                 var alreadyPresentGain = false;
                 var alreadyPresentLoss = false;
                 entity2check = data[i]["gainer"];
@@ -1150,7 +1147,6 @@ function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gai
 
 // Update bubbles on the map with new data; type = People if true, else Land
 function updateBubbles(newData, type, isNet) {
-  console.log(newData);
   // put in new data
   var min = d3.min(newData, function(d) { return type == true ? Math.abs(d.people) : Math.abs(d.land);} );
   var max = d3.max(newData, function(d) { return type == true ? Math.abs(d.people) : Math.abs(d.land);} );
@@ -1159,7 +1155,7 @@ function updateBubbles(newData, type, isNet) {
     .data(newData);
 
   newCentroids.exit().remove();
-
+  
   // create new centroids
   newCentroids.enter().append("circle")
     .merge(newCentroids) // merge existing and new
@@ -1167,9 +1163,48 @@ function updateBubbles(newData, type, isNet) {
     .attr("fill", function(d) { return "#a0a0f0"; }) // TODO: tie this to gain/loss/net
     .attr("r", function(d) { 
       if (type) {
-        return d.people/1000000; // TODO: fix the scaling, use binning
+        //return d.people/1000000;
+		// Binning:		
+		if (d.people < 100) {
+			return 2;
+		}
+		else if (d.people < 1000) {
+			return 3;
+		}
+		else if (d.people < 10000) {
+			return 5;
+		}
+		else if (d.people < 100000) {
+			return 8;
+		}
+		else if (d.people < 10000000) {
+			return 13;
+		}
+		else {
+			return 19;
+		}	
       }
-      return d.land/100000; // TODO: fix the scaling, use binning
+	  else {
+		//return d.land/100000; // TODO: fix the scaling, use binning
+		if (d.land < 100) {
+			return 2;
+		}
+		else if (d.land < 1000) {
+			return 3;
+		}
+		else if (d.land < 10000) {
+			return 5;
+		}
+		else if (d.land < 100000) {
+			return 8;
+		}
+		else if (d.land < 1000000) {
+			return 13;
+		}
+		else {
+			return 19;
+		}	
+	  }
     })
     .attr("cx", function(d) { 
       d.x = d.origX; // reset initial x-coordinate
@@ -1338,23 +1373,20 @@ function updateSankey(lower_bound, upper_bound, exchangeType, country, isLand) {
       
     });
      
-    //console.log(graph.links);
     var tempSum = 0;
     for (i=0; i<graph.links.length; i++) {
       if (graph.links[i]["target"] == country) {
         tempSum += graph.links[i]["value"];
       }
     }
-    //console.log(tempSum);
     numGroups = graph.nodes.length;
     
     ///////////////////////////////
     heightSan = (300 - marginSan.top - marginSan.bottom) * numGroups/6;
     var length = d3.select("#chart")["_groups"][0][0].children.length;
-    console.log(length);
     if (length > 0) {
-      console.log(d3.select("#chart")["_groups"][0][0].children[0].remove());
-      //d3.select("#chart")["_groups"][0][0].children[3].remove();
+      //console.log(d3.select("#chart")["_groups"][0][0].children[0].remove());
+      d3.select("#chart")["_groups"][0][0].children[3].remove();
     }
   
     // append the svg canvas to the page
