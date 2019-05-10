@@ -296,9 +296,9 @@ var sankeyG = sankeySvg.append("g")
 /* For the Map */
 var mapWidth = 960,
     mapHeight = 700,
-    nodePadding = 8, // distance between same-color nodes
-    clusterPadding = 10, // distance between different-color nodes
-    maxRadius = mapHeight*0.1, // should this vary with the current node options?
+    nodePadding = 18, // distance between same-color nodes
+    clusterPadding = 20, // distance between different-color nodes
+    maxRadius = mapHeight*0.1,
     active = d3.select(null);
 
 var projection = d3.geoMercator()
@@ -351,6 +351,18 @@ var continentCentroids = {};
 mapSvg.call(zoom);
 /* End map initialization section */
 
+// Helper Function
+function union(arrA, arrB) {
+    var _union = new Set(arrA);
+    for (var elem of arrB) {
+      if (elem == "0") {
+        elem = "--";
+      }
+      _union.add(elem);
+    }
+    return _union;
+  }
+
 /* Load in all the files */
 d3.queue()
 	.defer(d3.json, "world-continents.json")
@@ -372,17 +384,6 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
   var gainers = d3.map(exchangeData, function(d){return d["gainer"];}).keys();
 
   var losers = d3.map(exchangeData, function(d){return d["loser"];}).keys();
-
-  function union(setA, setB) {
-    var _union = new Set(setA);
-    for (var elem of setB) {
-      if (elem == "0") {
-        elem = "--";
-      }
-      _union.add(elem);
-    }
-    return _union;
-  }
 
   var countries = Array.from(union(gainers, losers)).sort();
 
@@ -448,17 +449,48 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
 		};
 	}
 
+  
+  var countriesDataCopy = Array.from(countriesData);
+  var d_ids = new Set(countriesDataCopy.map(function(d) { return parseInt(d.id); }));
+  console.log(d_ids);
+  var missing_ids = [];
+
+  var exchangeDataCopy = Array.from(exchangeData);
+  var e_a3s_g = new Set(exchangeDataCopy.map(function(e) { return e.c_a3_g; }))
+  var e_a3s_l = new Set(exchangeDataCopy.map(function(e) { return e.c_a3_g; }))
+
+  var e_a3s = union(e_a3s_g, e_a3s_l);
+  var missing_a3s = [];
+  
+  var namesCopy = Array.from(names);
+  var n_a3s = new Set(namesCopy.map(function(n) {return n.alpha_3;}));
+  var missing_a3s_n = [];
+
   // set up countries
   countriesData.filter(function(d) {
   	return names.some(function(n) {
-  		if (parseInt(d.id) == parseInt(n.id)) {
+      if (!d_ids.has(parseInt(n.id))) {
+        missing_ids.push(n.id);
+      }
+  		else if (parseInt(d.id) == parseInt(n.id)) {
   			d.nameCode = n.alpha_3;
+        d.name = n.name;
+
+        if (!e_a3s.has(n.alpha_3)) {
+          missing_a3s.push(n.alpha_3);
+        }
 
         exchangeData.some(function(e) {
             if (n.alpha_3 == e.c_a3_g) {
               d.name = e.gainer;
             } else if (n.alpha_3 == e.c_a3_l) {
               d.name = e.loser;
+            }
+
+            if (!n_a3s.has(e.c_a3_g)) {
+              missing_a3s_n.push(e.c_a3_g);
+            } else if (!n_a3s.has(e.c_a3_l)) {
+              missing_a3s_n.push(e.c_a3_l);
             }
         });
 
@@ -497,8 +529,20 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
             d.color = "#ccc";
         }
   		}
+      /* else {
+        console.log(n.id);
+      } */
   	});
 	});
+
+  //console.log(countriesData.length);
+  //console.log(names.length);
+  //var missing_set = new Set(missing_ids);
+  //console.log(missing_set);
+  var missing_a3s_set = new Set(missing_a3s);
+  console.log(missing_a3s_set)
+  var missing_a3s_set_2 = new Set(missing_a3s_n);
+  console.log(missing_a3s_set_2)
 
   centroidItems = countriesData.map(function(feature) {
     var centroidItem = {
@@ -1166,43 +1210,43 @@ function updateBubbles(newData, type, isNet) {
         //return d.people/1000000;
 		// Binning:		
 		if (d.people < 100) {
-			return 2;
+			return 4;
 		}
 		else if (d.people < 1000) {
-			return 3;
+			return 6;
 		}
 		else if (d.people < 10000) {
-			return 5;
-		}
-		else if (d.people < 100000) {
 			return 8;
 		}
+		else if (d.people < 100000) {
+			return 10;
+		}
 		else if (d.people < 10000000) {
-			return 13;
+			return 12;
 		}
 		else {
-			return 19;
+			return 14;
 		}	
       }
 	  else {
 		//return d.land/100000; // TODO: fix the scaling, use binning
 		if (d.land < 100) {
-			return 2;
+			return 4;
 		}
 		else if (d.land < 1000) {
-			return 3;
+			return 6;
 		}
 		else if (d.land < 10000) {
-			return 5;
-		}
-		else if (d.land < 100000) {
 			return 8;
 		}
+		else if (d.land < 100000) {
+			return 10;
+		}
 		else if (d.land < 1000000) {
-			return 13;
+			return 12;
 		}
 		else {
-			return 19;
+			return 14;
 		}	
 	  }
     })
