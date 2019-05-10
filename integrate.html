@@ -955,8 +955,8 @@ function onExchangeChange() {
 // Change values based on timeline
 function brushed() {
   var s = d3.event.selection || x.range();
-  var min_year = Math.ceil(s[0]/4.73 + 1815);		// Gets the minimum
-  var max_year = Math.floor(s[1]/4.73 + 1815);		// Gets the maximum
+  var min_year = Math.ceil(s[0]/4.63 + 1815);		// Gets the minimum
+  var max_year = Math.floor(s[1]/4.63 + 1815);		// Gets the maximum
   var range_years = [min_year, max_year]; 
 
   lower = min_year
