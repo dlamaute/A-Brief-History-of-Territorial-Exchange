@@ -456,6 +456,7 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
   	return names.some(function(n) {
   		if (parseInt(d.id) == parseInt(n.id)) {
   			d.nameCode = n.alpha_3;
+        d.name = n.name;
 
         exchangeData.some(function(e) {
             if (n.alpha_3 == e.c_a3_g) {
@@ -1074,6 +1075,7 @@ function getNewNetData(lower_bound, upper_bound, type, exchange) {
                   newdata["land"] = -1 * data[i]["land"];
                   newdata["people"] = -1 * data[i]["people"];
                   newdata["entity"] = data[i]["loser"];
+                  newdata["year"] = data[i]["year"];
                   data3.push(newdata);
                 }
                 else {
@@ -1083,8 +1085,8 @@ function getNewNetData(lower_bound, upper_bound, type, exchange) {
               };
 
               for (i=0; i < data3.length; i++) {
-                data3[i]["peopleLoss"] = data3[i]["people"] >= 0 ? "false" : "true";
-                data3[i]["landLoss"] = data3[i]["land"] >= 0 ? "false" : "true";
+                data3[i]["peopleLoss"] = data3[i]["people"] >= 0 ? false : true;
+                data3[i]["landLoss"] = data3[i]["land"] >= 0 ? false : true;
               }					
 
               completeUpdate(data3, lower_bound, upper_bound, type, exchange, gains, true);
@@ -1114,7 +1116,7 @@ function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gai
   else {
     centroidItems.filter(function(d) {
               return inputData.some(function(n) {
-                if (d.name == n.gainer || d.name == n.loser) {
+                if (n.entity == d.name) {
                   d.exchange = n.procedure;
                   d.land = n.land;
                   d.gainer = n.gainer;
@@ -1159,29 +1161,29 @@ function updateBubbles(newData, type, isNet) {
     .attr("class", "centroid")
     .attr("fill", function(d) { 
       if ( (!isNet && gains == 1) || (isNet && type && d.peopleLoss) || (isNet && !type && d.landLoss) ) {
-        return "salmon";
+        return "lightcoral";
       }
       else {
-          return "#a0a0f0";
+          return "lightblue";
       }
       })
     .attr("r", function(d) { 
       if (type) {
         //return d.people/1000000;
 		// Binning:		
-		if (d.people < 100) {
+		if (Math.abs(d.people) < 100) {
 			return 2;
 		}
-		else if (d.people < 1000) {
+		else if (Math.abs(d.people) < 1000) {
 			return 3;
 		}
-		else if (d.people < 10000) {
+		else if (Math.abs(d.people) < 10000) {
 			return 5;
 		}
-		else if (d.people < 100000) {
+		else if (Math.abs(d.people) < 100000) {
 			return 8;
 		}
-		else if (d.people < 10000000) {
+		else if (Math.abs(d.people) < 10000000) {
 			return 13;
 		}
 		else {
@@ -1190,19 +1192,19 @@ function updateBubbles(newData, type, isNet) {
       }
 	  else {
 		//return d.land/100000; // TODO: fix the scaling, use binning
-		if (d.land < 100) {
+		if (Math.abs(d.land) < 100) {
 			return 2;
 		}
-		else if (d.land < 1000) {
+		else if (Math.abs(d.land)  < 1000) {
 			return 3;
 		}
-		else if (d.land < 10000) {
+		else if (Math.abs(d.land) < 10000) {
 			return 5;
 		}
-		else if (d.land < 100000) {
+		else if (Math.abs(d.land)  < 100000) {
 			return 8;
 		}
-		else if (d.land < 1000000) {
+		else if (Math.abs(d.land)  < 1000000) {
 			return 13;
 		}
 		else {
