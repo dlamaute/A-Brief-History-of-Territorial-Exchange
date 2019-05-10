@@ -1157,7 +1157,14 @@ function updateBubbles(newData, type, isNet) {
   newCentroids.enter().append("circle")
     .merge(newCentroids) // merge existing and new
     .attr("class", "centroid")
-    .attr("fill", function(d) { return "#a0a0f0"; }) // TODO: tie this to gain/loss/net
+    .attr("fill", function(d) { 
+      if ( (!isNet && gains == 1) || (isNet && type && d.peopleLoss) || (isNet && !type && d.landLoss) ) {
+        return "salmon";
+      }
+      else {
+          return "#a0a0f0";
+      }
+      })
     .attr("r", function(d) { 
       if (type) {
         //return d.people/1000000;
