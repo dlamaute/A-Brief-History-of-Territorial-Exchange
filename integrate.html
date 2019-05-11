@@ -101,9 +101,9 @@
   stroke-opacity: .2;
 }
 
-.link2:hover {
+/* .link2:hover {
   stroke-opacity: .5;
-}
+} */
 
 .header{
   display: block;
@@ -280,23 +280,11 @@ var timelineSvg = d3.select("#timelineSvg"),
 
 body.attr("width", (width + 100).toString() + "px").attr("height", (height + 50).toString() + "px");
 
-// Add in Sankey variable
-/* var marginSan = {top: 10, right: 10, bottom: 10, left: 68},
-    widthSan = 1038 - marginSan.left - marginSan.right,
-    heightSan = 500 - marginSan.top - marginSan.bottom;
-
-var sankeySvg = d3v3.select("#chart").append("svg")
-  .attr("width", "100%")
-  .attr("class", "hidden");
-                    
-var sankeyG = sankeySvg.append("g")
-              .attr("transform", "translate(" + marginSan.left + "," + marginSan.top + ")"); */
-
 /* For the Map */
 var mapWidth = 960,
     mapHeight = 500,
-    nodePadding = 18, // distance between same-color nodes
-    clusterPadding = 20, // distance between different-color nodes
+    nodePadding = 25, // distance between same-color nodes
+    clusterPadding = 25, // distance between different-color nodes
     maxRadius = mapHeight*0.1,
     active = d3.select(null);
 
@@ -342,6 +330,49 @@ var continentClusterCodes = {
   "South America": 5,
   "Oceania": 6,
   "Antarctica": 7
+}
+
+// Binning functions
+function radiusPop(pop) {
+  if (pop < 100) {
+    return 4;
+  }
+  else if (pop < 1000) {
+    return 6;
+  }
+  else if (pop < 10000) {
+    return 8;
+  }
+  else if (pop < 100000) {
+    return 10;
+  }
+  else if (pop < 10000000) {
+    return 12;
+  }
+  else {
+    return 14;
+  } 
+}
+
+function radiusLand(land) {
+  if (land < 100) {
+      return 4;
+    }
+    else if (land < 1000) {
+      return 6;
+    }
+    else if (land < 10000) {
+      return 8;
+    }
+    else if (land < 100000) {
+      return 10;
+    }
+    else if (land < 1000000) {
+      return 12;
+    }
+    else {
+      return 14;
+    } 
 }
 
 var centroidItems = [];
@@ -449,48 +480,50 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
 	}
 
   
-  var countriesDataCopy = Array.from(countriesData);
+  /* var countriesDataCopy = Array.from(countriesData);
   var d_ids = new Set(countriesDataCopy.map(function(d) { return parseInt(d.id); }));
   console.log(d_ids);
   var missing_ids = [];
 
   var exchangeDataCopy = Array.from(exchangeData);
   var e_a3s_g = new Set(exchangeDataCopy.map(function(e) { return e.c_a3_g; }))
-  var e_a3s_l = new Set(exchangeDataCopy.map(function(e) { return e.c_a3_g; }))
+  var e_a3s_l = new Set(exchangeDataCopy.map(function(e) { return e.c_a3_l; }))
 
   var e_a3s = union(e_a3s_g, e_a3s_l);
   var missing_a3s = [];
   
   var namesCopy = Array.from(names);
   var n_a3s = new Set(namesCopy.map(function(n) {return n.alpha_3;}));
-  var missing_a3s_n = [];
+  var missing_a3s_n = {}; */
 
   // set up countries
   countriesData.filter(function(d) {
   	return names.some(function(n) {
-      if (!d_ids.has(parseInt(n.id))) {
+      /* if (!d_ids.has(parseInt(n.id))) {
         missing_ids.push(n.id);
-      }
-  		else if (parseInt(d.id) == parseInt(n.id)) {
+      } */
+  		if (parseInt(d.id) == parseInt(n.id)) {
   			d.nameCode = n.alpha_3;
         d.name = n.name;
 
-        if (!e_a3s.has(n.alpha_3)) {
+        /* if (!e_a3s.has(n.alpha_3)) {
           missing_a3s.push(n.alpha_3);
-        }
+        } */
 
         exchangeData.some(function(e) {
             if (n.alpha_3 == e.c_a3_g) {
               d.name = e.gainer;
+              d.radius = radiusLand(e.area); // initial is based on land
             } else if (n.alpha_3 == e.c_a3_l) {
               d.name = e.loser;
+              d.radius = 0; // only gainers will show initially
             }
 
-            if (!n_a3s.has(e.c_a3_g)) {
-              missing_a3s_n.push(e.c_a3_g);
+            /* if (!n_a3s.has(e.c_a3_g)) {
+              missing_a3s_n[e.c_a3_g] = e.gainer;
             } else if (!n_a3s.has(e.c_a3_l)) {
-              missing_a3s_n.push(e.c_a3_l);
-            }
+              missing_a3s_n[e.c_a3_l] = e.loser;
+            } */
         });
 
   			if (n.region != "Americas") {
@@ -500,7 +533,6 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
   			} else {
   				d.region = "North America";
   			}
-        d.radius = Math.floor(Math.random()*10); // irl to be determined by exchange data
       // colors for identifying separate clusters
         switch(continentClusterCodes[d.region]) {
           case 1:
@@ -538,10 +570,11 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
   //console.log(names.length);
   //var missing_set = new Set(missing_ids);
   //console.log(missing_set);
-  var missing_a3s_set = new Set(missing_a3s);
+  /* var missing_a3s_set = new Set(missing_a3s);
   console.log(missing_a3s_set)
-  var missing_a3s_set_2 = new Set(missing_a3s_n);
-  console.log(missing_a3s_set_2)
+  //var missing_a3s_set_2 = new Set(missing_a3s_n);
+  console.log(missing_a3s_n);
+  print(missing_a3s_n); */
 
   centroidItems = countriesData.map(function(feature) {
     var centroidItem = {
@@ -601,16 +634,32 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
     });
 }
 
-// Update Sankey diagram if new country is selected
+// if new country is selected via dropdown
   function countryChange() {
+    // Update Sankey diagram 
     selected = d3.select(this).property("value");
     var isLand = !isPeople;
     updateSankey(lower, upper, exchangeType, selected, isLand);
 
-    // TODO: add map highlighting
+    // corresponding map highlighting
+    var centroids = base_g.selectAll(".centroid");
     for (d of centroidItems) {
+      var found = false;
       if (d.name == selected) {
-        //console.log(d);
+        found = true;
+        centroids.each(function(c) {
+          var centroid = d3.select(this);
+          if (centroid.attr("cx") == d.x && centroid.attr("cy") == d.y) {
+            centroid.attr("stroke", "#f00")
+            .attr("stroke-width", "5");
+          } else {
+            centroid.attr("stroke", centroid.data()[0].color)
+            .attr("stroke-width", "2");
+          }
+        });
+      }
+      if (found) {
+        break;
       }
     }
   }
@@ -657,16 +706,51 @@ function toggleCluster(continent_gs, clustered, clusteredCentroids) {
       });
 
     data.forEach(function(d) {
-      if (d.region == "Oceania") {
-        d.y += 200;
+      switch (d.cluster) {
+        case 1:
+          d.y += 100;
+          break;
+        case 2:
+          d.x += 100;
+          break;
+        case 3:
+          d.y -= 50;
+          break;
+        case 4:
+          d.y -= 50;
+          break;
+        case 5:
+          d.y += 50;
+          break;
+        case 6:
+          d.y += 250;
+          break;
+        default:
+          break;
       }
+
+      /* var continentClusterCodes = {
+  "Africa": 1,
+  "Asia": 2,
+  "Europe": 3,
+  "North America": 4,
+  "South America": 5,
+  "Oceania": 6,
+  "Antarctica": 7
+} */
+
+      /* if (d.region == "Oceania") {
+        d.y += 200;
+      } else if (d.region == "Africa") {
+        d.y += 100;
+      } else if () */
     });
     clusterSimulation
       .nodes(data)
       .alpha(1)
-      .alphaMin(0.3)
+      .alphaMin(0.1)
       .force("x", d3.forceX()
-        .strength(0.03)
+        .strength(0.02)
         .x(function(d) {
           if(d.region) {
             var cluster = continentCentroids[d.region];
@@ -677,7 +761,7 @@ function toggleCluster(continent_gs, clustered, clusteredCentroids) {
         })
       )
       .force("y", d3.forceY()
-        .strength(0.03)
+        .strength(0.02)
         .y(function(d) {
           if(d.region) {
             var cluster = continentCentroids[d.region];
@@ -707,10 +791,10 @@ function toggleCluster(continent_gs, clustered, clusteredCentroids) {
     clusterSimulation2
       .nodes(data)
       .alpha(1)
-      .alphaMin(0.08)
+      .alphaMin(0.1)
       .force('attract', d3.forceAttract()
         .target([mapWidth/2,mapHeight/2])
-        .strength(-.00013158*data.length + 0.05132) // needs more force when there are fewer points
+        .strength(-.0001*data.length + 0.03)// -.00013158*data.length + 0.05132) // needs more force when there are fewer points
       )
       .force('collide', function(alpha) {
         return collide(alpha, data)
@@ -718,9 +802,9 @@ function toggleCluster(continent_gs, clustered, clusteredCentroids) {
       .restart()
       .on("tick", clusterTick)
       .on("end", function(d) {
-        mapSvg.transition()
+        /* mapSvg.transition()
           .duration(750)
-          .call(zoom.transform, d3.zoomIdentity.translate(-mapWidth/2,-mapHeight/2).scale(2))
+          .call(zoom.transform, d3.zoomIdentity.translate(-mapWidth/2,-mapHeight/2).scale(2))*/
         top_g.selectAll(".clusterWaitLayer").remove();
         top_g.selectAll(".clusterWaitText").remove();
       });
@@ -1213,48 +1297,10 @@ function updateBubbles(newData, type, isNet) {
       })
     .attr("r", function(d) { 
       if (type) {
-        //return d.people/1000000;
-		// Binning:		
-		if (d.people < 100) {
-			return 4;
-		}
-		else if (d.people < 1000) {
-			return 6;
-		}
-		else if (d.people < 10000) {
-			return 8;
-		}
-		else if (d.people < 100000) {
-			return 10;
-		}
-		else if (d.people < 10000000) {
-			return 12;
-		}
-		else {
-			return 14;
-		}	
+        return radiusPop(d.people);
+      } else {
+        return radiusLand(d.land);
       }
-	  else {
-		//return d.land/100000; // TODO: fix the scaling, use binning
-		if (d.land < 100) {
-			return 4;
-		}
-		else if (d.land < 1000) {
-			return 6;
-		}
-		else if (d.land < 10000) {
-			return 8;
-		}
-		else if (d.land < 100000) {
-			return 10;
-		}
-		else if (d.land < 1000000) {
-			return 12;
-		}
-		else {
-			return 14;
-		}	
-	  }
     })
     .attr("cx", function(d) { 
       d.x = d.origX; // reset initial x-coordinate
