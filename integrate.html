@@ -506,10 +506,6 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
   			d.nameCode = n.alpha_3;
         d.name = n.name;
 
-        /* if (!e_a3s.has(n.alpha_3)) {
-          missing_a3s.push(n.alpha_3);
-        } */
-
         exchangeData.some(function(e) {
             if (n.alpha_3 == e.c_a3_g) {
               d.name = e.gainer;
@@ -1085,8 +1081,8 @@ function onExchangeChange() {
 // Change values based on timeline
 function brushed() {
   var s = d3.event.selection || x.range();
-  var min_year = Math.ceil(s[0]/4.73 + 1815);		// Gets the minimum
-  var max_year = Math.floor(s[1]/4.73 + 1815);		// Gets the maximum
+  var min_year = Math.ceil(s[0]/4.63 + 1815);		// Gets the minimum
+  var max_year = Math.floor(s[1]/4.63 + 1815);		// Gets the maximum
   var range_years = [min_year, max_year]; 
 
   lower = min_year
@@ -1204,6 +1200,7 @@ function getNewNetData(lower_bound, upper_bound, type, exchange) {
                   newdata["land"] = -1 * data[i]["land"];
                   newdata["people"] = -1 * data[i]["people"];
                   newdata["entity"] = data[i]["loser"];
+                  newdata["year"] = data[i]["year"];
                   data3.push(newdata);
                 }
                 else {
@@ -1213,8 +1210,8 @@ function getNewNetData(lower_bound, upper_bound, type, exchange) {
               };
 
               for (i=0; i < data3.length; i++) {
-                data3[i]["peopleLoss"] = data3[i]["people"] >= 0 ? "false" : "true";
-                data3[i]["landLoss"] = data3[i]["land"] >= 0 ? "false" : "true";
+                data3[i]["peopleLoss"] = data3[i]["people"] >= 0 ? false : true;
+                data3[i]["landLoss"] = data3[i]["land"] >= 0 ? false : true;
               }					
 
               completeUpdate(data3, lower_bound, upper_bound, type, exchange, gains, true);
@@ -1244,7 +1241,7 @@ function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gai
   else {
     centroidItems.filter(function(d) {
               return inputData.some(function(n) {
-                if (d.name == n.gainer || d.name == n.loser) {
+                if (n.entity == d.name) {
                   d.exchange = n.procedure;
                   d.land = n.land;
                   d.gainer = n.gainer;
@@ -1289,10 +1286,10 @@ function updateBubbles(newData, type, isNet) {
     .attr("class", "centroid")
     .attr("fill", function(d) { 
       if ( (!isNet && gains == 1) || (isNet && type && d.peopleLoss) || (isNet && !type && d.landLoss) ) {
-        return "salmon";
+        return "lightcoral";
       }
       else {
-          return "#a0a0f0";
+          return "lightblue";
       }
       })
     .attr("r", function(d) { 
