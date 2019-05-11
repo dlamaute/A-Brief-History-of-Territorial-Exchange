@@ -1021,7 +1021,6 @@ var check = d3.csv("wrangle.csv",
                 data3.push(data[i]);
               }
             }
-
             completeUpdate(data3, lower_bound, upper_bound, type, exchange, gains, false);
 
         });
@@ -1098,6 +1097,11 @@ function getNewNetData(lower_bound, upper_bound, type, exchange) {
 // Complete the update after getting data
 function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gains, isNet) {
 
+  // refresh all chosen variables
+  for (i=0; i < centroidItems.length; i++) {
+    centroidItems[i]["chosen"] = false;
+  }
+
   if (isNet==false) {
     centroidItems.filter(function(d) {
               return inputData.some(function(n) {
@@ -1109,6 +1113,7 @@ function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gai
                   d.loser = n.loser;
                   d.year = n.year;
                   d.people = n.people;
+                  d.chosen = true;
                 }
               })
             });
@@ -1125,6 +1130,7 @@ function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gai
                   d.people = n.people;
                   d.peopleLoss = n.peopleLoss;
                   d.landLoss = n.landLoss;
+                  d.chosen = true;
                 }
               })
             });
@@ -1133,12 +1139,12 @@ function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gai
           if (exchange != "All") {
             items = centroidItems.filter( function(d) {
               return +d.year >= lower_bound && +d.year <= upper_bound && d.exchange
-                && d.exchange == exchange;
+                && d.exchange == exchange && d.chosen;
               });
           }
           else {
             items = centroidItems.filter( function(d) {
-                return d.year >= lower_bound && d.year <= upper_bound;
+                return d.year >= lower_bound && d.year <= upper_bound && d.chosen;
               });
           }
           updateBubbles(items, type, isNet);
@@ -1160,6 +1166,10 @@ function updateBubbles(newData, type, isNet) {
     .merge(newCentroids) // merge existing and new
     .attr("class", "centroid")
     .attr("fill", function(d) { 
+      if (d.name == "Papua New Guinea") {
+        console.log("HERE");
+        console.log(d.land);
+      }
       if ( (!isNet && gains == 1) || (isNet && type && d.peopleLoss) || (isNet && !type && d.landLoss) ) {
         return "lightcoral";
       }
