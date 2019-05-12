@@ -763,6 +763,7 @@ function countryClicked(d) {
 		if (selectedCountry != "") {
 			var isLand = !isPeople;
 			updateSankey(lower, upper, exchangeType, selectedCountry, isLand);
+      $("html, body").animate({ scrollTop: $(document).height() }, "slow");
 		}
 	}
 }
