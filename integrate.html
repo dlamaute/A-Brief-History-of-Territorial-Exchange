@@ -356,7 +356,7 @@ d3.queue()
 	.defer(d3.json, "world-continents.json")
 	.defer(d3.json, "world-countries.json")
 	.defer(d3.csv, "world_country_names.csv")
-	.defer(d3.csv, "wrangle.csv")
+	.defer(d3.csv, "sankey.csv")
   .await(setup);
 
 function setup(error, worldContinents, worldCountries, names, exchangeData) {
@@ -843,7 +843,7 @@ d3.select("#button3").classed("b_clicked", true);
 
 function updateTimeline(exchangeType) {
 
-  d3.csv("wrangle.csv", 
+  d3.csv("sankey.csv", 
     function(d) {
       d.exchange = +d["procedure"];
       d.land = +d["area"];
@@ -982,7 +982,63 @@ function brushed() {
 // Generate new centroid data with updated parameters
 function getNewData(lower_bound, upper_bound, type, exchange, gains) {
 
-var check = d3.csv("wrangle.csv", 
+var check = d3.csv("sankey.csv", 
+        // populate the fields correctly
+        function(d) {
+          d.exchange = d["procedure"];
+          d.land = +d["area"];
+          d.people = +d["pop"];
+          d.year = d["year"];
+          d.gainer = d["gainer"];
+          d.loser = d["loser"];
+
+          return d;
+        }, 
+
+        function(error, data) {
+          if (error) throw error;
+
+          var color = d3.scaleOrdinal()
+                    .domain(data.map(function(d){ return d.year; }))
+                    .range(['#fbb4ae','#b3cde3','#ccebc5','#decbe4','#fed9a6', '#ffe9a8','#b9bfe3','#fddaec','#cccccc']);
+
+            var variable = gains == 0 ? "gainer" : "loser";
+            var all = exchangeType == "All" ? true : false;
+
+            var data3 = [];
+            for (i=0; i < data.length; i++) {
+              var alreadyPresent = false;
+              entity2check = data[i][variable];
+              dataExchange = data[i]["exchange"];
+              index2save = null;
+              for (j=0; j < data3.length; j++) {
+                // data row matches gainer/loser and type of exchange
+                if (data3[j][variable] == entity2check && (data3[j]["exchange"] == exchangeType || all)) {
+                  index2save = j;
+                  alreadyPresent = true;
+                }
+              }
+
+              // check if exchange type matches
+              if (dataExchange == exchangeType || all) {
+                // check to see if country is already present
+                if (alreadyPresent) {
+                  data3[index2save]["land"] += data[i]["land"];
+                  data3[index2save]["people"] += data[i]["people"];
+                }
+                else {
+                  data3.push(data[i]);
+                }
+              }
+            }
+            completeUpdate(data3, lower_bound, upper_bound, type, exchange, gains, false);
+
+        });
+}
+
+function getNewNetData(lower_bound, upper_bound, type, exchange) {
+
+d3.csv("sankey.csv", 
         function(d) {
           d.exchange = d["procedure"];
           d.land = +d["area"];
@@ -996,84 +1052,50 @@ var check = d3.csv("wrangle.csv",
         function(error, data) {
           if (error) throw error;
 
-          var color = d3.scaleOrdinal()
-                    .domain(data.map(function(d){ return d.year; }))
-                    .range(['#fbb4ae','#b3cde3','#ccebc5','#decbe4','#fed9a6', '#ffe9a8','#b9bfe3','#fddaec','#cccccc']);
-
-            var variable = gains == 0 ? "gainer" : "loser";
-
             var data3 = [];
             for (i=0; i < data.length; i++) {
-              var alreadyPresent = false;
-              entity2check = data[i][variable];
-              index2save = null;
+              var alreadyPresentGain = false;
+              var alreadyPresentLoss = false;
+              var entity2check = data[i]["gainer"];
+              var otherentity2check = data[i]["loser"];
+              var dataExchange = data[i]["exchange"];
+              var all = exchangeType == "All" ? true : false;
+              var index2save = null;
+              var index2save1 = null;
               for (j=0; j < data3.length; j++) {
-                if (data3[j][variable] == entity2check) {
+                // both gainer/loser within the data and exchange type must match for the row
+                if (data3[j]["nation"] == entity2check && (data3[j]["exchange"] == exchangeType || all)) {
+                  // nation is the gainer
                   index2save = j;
-                  alreadyPresent = true;
+                  alreadyPresentGain = true;
+                }
+                if (data3[j]["nation"] == otherentity2check && (data3[j]["exchange"] == exchangeType || all)) {
+                  // nation is the loser
+                  index2save1 = j;
+                  alreadyPresentLoss = true;	
                 }
               }
-              if (alreadyPresent == true) {
-                data3[index2save]["land"] += data[i]["land"];
-                data3[index2save]["people"] += data[i]["people"];
-              }
-              else {
-                data3.push(data[i]);
-              }
-            }
-            completeUpdate(data3, lower_bound, upper_bound, type, exchange, gains, false);
 
-        });
-}
+              // the exchange type must match
+              if (dataExchange == exchangeType || all) {
 
-function getNewNetData(lower_bound, upper_bound, type, exchange) {
-
-  d3.csv("wrangle.csv", 
-          function(d) {
-            d.exchange = d["procedure"];
-            d.land = +d["area"];
-            d.people = +d["pop"];
-            d.year = d["year"];
-            d.gainer = d["gainer"];
-            d.loser = d["loser"];
-
-            return d;
-          }, 
-          function(error, data) {
-            if (error) throw error;
-
-              var data3 = [];
-              for (i=0; i < data.length; i++) {
-                var alreadyPresentGain = false;
-                var alreadyPresentLoss = false;
-                entity2check = data[i]["gainer"];
-                otherentity2check = data[i]["loser"];
-                index2save = null;
-                index2save1 = null;
-                for (j=0; j < data3.length; j++) {
-                  if (data3[j]["entity"] == entity2check) {
-                    index2save = j;
-                    alreadyPresentGain = true;
-                  }
-                  if (data3[j]["entity"] == otherentity2check) {
-                    index2save1 = j;
-                    alreadyPresentLoss = true;	
-                  }
-                }
-                if (alreadyPresentGain == false) {
-                  data[i]["entity"] = data[i]["gainer"];
+                // the gainer does not already exist as a nation in the data
+                if (!alreadyPresentGain) {
+                  data[i]["nation"] = data[i]["gainer"];  // gets the name of the country for the loss
                   data3.push(data[i]);
                 }
                 else {
                   data3[index2save]["land"] += data[i]["land"];
                   data3[index2save]["people"] += data[i]["people"];
                 }
-                if (alreadyPresentLoss == false) {
+
+                // the loser does not already exist as a nation in the data
+                if (alreadyPresentLoss == false ) {
                   newdata = {};
+                  newdata["nation"] = data[i]["loser"];   // gets the name of the country for the loss
                   newdata["exchange"] = data[i]["exchange"];
                   newdata["land"] = -1 * data[i]["land"];
                   newdata["people"] = -1 * data[i]["people"];
-                  newdata["entity"] = data[i]["loser"];
                   newdata["year"] = data[i]["year"];
                   data3.push(newdata);
                 }
@@ -1082,26 +1104,36 @@ function getNewNetData(lower_bound, upper_bound, type, exchange) {
                   data3[index2save1]["people"] -= data[i]["people"];
                 }
               };
+            }
 
-              for (i=0; i < data3.length; i++) {
-                data3[i]["peopleLoss"] = data3[i]["people"] >= 0 ? false : true;
-                data3[i]["landLoss"] = data3[i]["land"] >= 0 ? false : true;
-              }					
+            for (i=0; i < data3.length; i++) {
+              data3[i]["peopleLoss"] = data3[i]["people"] >= 0 ? false : true;
+              data3[i]["landLoss"] = data3[i]["land"] >= 0 ? false : true;
+            }					
 
-              completeUpdate(data3, lower_bound, upper_bound, type, exchange, gains, true);
+            completeUpdate(data3, lower_bound, upper_bound, type, exchange, gains, true);
 
-          });
+        });
 
 }
 
 // Complete the update after getting data
 function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gains, isNet) {
 
+  if (exchange=="Annexation") {
+    for (i=0; i < inputData.length; i++) {
+      if (inputData[i]["loser"] == "United States of America" && gains) {
+          console.log("UM");
+          console.log(inputData[i]["land"]);
+      }
+    }
+  }
+
   // refresh all chosen variables
   for (i=0; i < centroidItems.length; i++) {
     centroidItems[i]["chosen"] = false;
   }
-
+  
   if (isNet==false) {
     centroidItems.filter(function(d) {
               return inputData.some(function(n) {
@@ -1121,7 +1153,7 @@ function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gai
   else {
     centroidItems.filter(function(d) {
               return inputData.some(function(n) {
-                if (n.entity == d.name) {
+                if (n.nation == d.name) {
                   d.exchange = n.procedure;
                   d.land = n.land;
                   d.gainer = n.gainer;
@@ -1136,17 +1168,9 @@ function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gai
             });
   }
 
-          if (exchange != "All") {
-            items = centroidItems.filter( function(d) {
-              return +d.year >= lower_bound && +d.year <= upper_bound && d.exchange
-                && d.exchange == exchange && d.chosen;
-              });
-          }
-          else {
-            items = centroidItems.filter( function(d) {
+          items = centroidItems.filter( function(d) {
                 return d.year >= lower_bound && d.year <= upper_bound && d.chosen;
-              });
-          }
+          });
           updateBubbles(items, type, isNet);
 }
 
@@ -1165,7 +1189,7 @@ function updateBubbles(newData, type, isNet) {
   newCentroids.enter().append("circle")
     .merge(newCentroids) // merge existing and new
     .attr("class", "centroid")
-    .attr("fill", function(d) { 
+    .attr("fill", function(d) {
       if ( (!isNet && gains == 1) || (isNet && type && d.peopleLoss) || (isNet && !type && d.landLoss) ) {
         return "lightcoral";
       }
