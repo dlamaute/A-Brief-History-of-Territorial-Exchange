@@ -249,6 +249,7 @@ h1 {
   <div class="right-buttons" id="exchanges"></div>
   <svg width="960" height="100" font-family="sans-serif" font-size="10" text-anchor="middle" id="timelineSvg" style="margin-left:15%"></svg>
   <div class="sankey" id="chart" style="margin-left: 10%"></div>
+  <a name="bottom"></a>
 </div>
 
 </body>
@@ -399,7 +400,7 @@ d3.queue()
 	.defer(d3.json, "world-countries.json")
 	.defer(d3.csv, "world_country_names.csv")
 	.defer(d3.csv, "wrangle.csv")
-	.await(setup);
+  .await(setup);
 
 function setup(error, worldContinents, worldCountries, names, exchangeData) {
 	if (error) throw error;
@@ -1145,7 +1146,6 @@ var check = d3.csv("wrangle.csv",
                 data3.push(data[i]);
               }
             }
-
             completeUpdate(data3, lower_bound, upper_bound, type, exchange, gains, false);
 
         });
@@ -1222,6 +1222,11 @@ function getNewNetData(lower_bound, upper_bound, type, exchange) {
 // Complete the update after getting data
 function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gains, isNet) {
 
+  // refresh all chosen variables
+  for (i=0; i < centroidItems.length; i++) {
+    centroidItems[i]["chosen"] = false;
+  }
+
   if (isNet==false) {
     centroidItems.filter(function(d) {
               return inputData.some(function(n) {
@@ -1233,6 +1238,7 @@ function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gai
                   d.loser = n.loser;
                   d.year = n.year;
                   d.people = n.people;
+                  d.chosen = true;
                 }
               })
             });
@@ -1249,6 +1255,7 @@ function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gai
                   d.people = n.people;
                   d.peopleLoss = n.peopleLoss;
                   d.landLoss = n.landLoss;
+                  d.chosen = true;
                 }
               })
             });
@@ -1257,12 +1264,12 @@ function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gai
           if (exchange != "All") {
             items = centroidItems.filter( function(d) {
               return +d.year >= lower_bound && +d.year <= upper_bound && d.exchange
-                && d.exchange == exchange;
+                && d.exchange == exchange && d.chosen;
               });
           }
           else {
             items = centroidItems.filter( function(d) {
-                return d.year >= lower_bound && d.year <= upper_bound;
+                return d.year >= lower_bound && d.year <= upper_bound && d.chosen;
               });
           }
           updateBubbles(items, type, isNet);
