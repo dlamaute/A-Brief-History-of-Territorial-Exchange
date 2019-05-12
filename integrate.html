@@ -284,8 +284,8 @@ body.attr("width", (width + 100).toString() + "px").attr("height", (height + 50)
 /* For the Map */
 var mapWidth = 960,
     mapHeight = 500,
-    nodePadding = 50, // distance between same-color nodes
-    clusterPadding = 50, // distance between different-color nodes
+    nodePadding = 25, // distance between same-color nodes
+    clusterPadding = 30, // distance between different-color nodes
     maxRadius = mapHeight*0.1,
     active = d3.select(null);
 
@@ -727,19 +727,18 @@ function toggleCluster(continent_gs, clustered, clusteredCentroids) {
       }
     });
 
-    /* declumpSimulation = d3.forceSimulation()
+    declumpSimulation = d3.forceSimulation()
       .nodes(data)
       .alpha(1)
       .alphaMin(0.5)
       .force('collide', function(alpha) {
-        console.log(alpha);
         return collide(alpha, data)
       })
       .restart()
       .on('tick', clusterTick)
-      .on("end", initialCluster); */
+      .on("end", initialCluster);
 
-    // function initialCluster() {
+    function initialCluster() {
       console.log("initial cluster start");
       clusterSimulation
         .nodes(data)
@@ -775,12 +774,18 @@ function toggleCluster(continent_gs, clustered, clusteredCentroids) {
         .on("end", function(d) {
           return startGroupCluster(data);
         })
-    // }
+    }
 
     clustered = true;
   }
 
   function startGroupCluster(data) {
+    for (d of data) {
+      if (d.name == "Uganda") {
+        console.log(d.radius);
+      }
+    }
+
     d3.selectAll(".feature.continent").transition()    
             .duration(500)    
             .style("opacity", "0");
@@ -1221,6 +1226,8 @@ function getNewNetData(lower_bound, upper_bound, type, exchange) {
 
 // Complete the update after getting data
 function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gains, isNet) {
+
+  centroidItems = d3.selectAll(".centroid").data();
 
   // refresh all chosen variables
   for (i=0; i < centroidItems.length; i++) {
