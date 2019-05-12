@@ -259,39 +259,53 @@ h1 {
 
 <script>
 
-var body = d3.select("body");
+/* Global Variables */
+var lower = 1815;					// Lower bound on year filter
+var upper = 2016;					// Upper bound on year filter
+var isPeople = false;				// People vs Land filter
+var exchangeType = "All";			// Exchange type filter (All/Annexation/Cession/Conquest/Independence/Mandated territory/Secession/Unification)
+var gains = 0;						// Gains (0), Losses (1), Net (2) filter
+var selected = null;				// Country that is currently selected
+var sankeyPresent = false;			// Is a Sankey diagram on the display
+/* End global variables section */
 
-var lower = 1815;
-var upper = 2016;
-var isPeople = false;
-var exchangeType = "All";
-var gains = 0;
-var loaded = false;
-var selected = null;
+/* For the buttons */
+updateTimeline("All");
+d3.select("#button1").classed("b_clicked", true);
+d3.select("#button3").classed("b_clicked", true);
+/* End of button initialization */
 
-var sankeyPresent = false;
-
-// SVG for timeline
+/* For the Timeline */
 var timelineSvg = d3.select("#timelineSvg"),
-	  margin = {top: 10, right: 10, bottom: 10, left: 10},
+	margin = {top: 10, right: 10, bottom: 10, left: 10},
     margin2 = {top: 10, right: 10, bottom: 20, left: 20},
     width = +timelineSvg.attr("width") - margin.left - margin.right,
     height = +timelineSvg.attr("height") - margin.top - margin.bottom,
     height2 = +timelineSvg.attr("height") - margin2.top - margin2.bottom;
+	
+updateYearsBanner(lower, upper);
+/* End Timeline initialization section */
 
+var body = d3.select("body");
 body.attr("width", (width + 100).toString() + "px").attr("height", (height + 50).toString() + "px");
+
+/* For the Sankey */
+var marginSan = {top: 10, right: 10, bottom: 10, left: 68},
+    widthSan = 1038 - marginSan.left - marginSan.right,
+    heightSan = 500 - marginSan.top - marginSan.bottom;
+/* End Sankey initialization section */
 
 /* For the Map */
 var mapWidth = 960,
     mapHeight = 500,
-    nodePadding = 25, // distance between same-color nodes
-    clusterPadding = 30, // distance between different-color nodes
-    maxRadius = mapHeight*0.1,
+    nodePadding = 25, 			// distance between same-color nodes
+    clusterPadding = 30, 		// distance between different-color nodes
+    maxRadius = mapHeight*0.1, 	// should this vary with the current node options?
     active = d3.select(null);
 
 var projection = d3.geoMercator()
-    .scale(150)
-    .translate([mapWidth / 2,mapHeight / 2]);
+				   .scale(150)
+				   .translate([mapWidth / 2,mapHeight / 2]);
   
 var zoom = d3.zoom().on("zoom", zoomed);
 var path = d3.geoPath().projection(projection);
@@ -304,21 +318,21 @@ var selectedCountry = "";
 
 // Define the div for the tooltip
 let tooltipDiv = body.append("div") 
-    .attr("class", "tooltip")       
-    .style("opacity", 0);
+					 .attr("class", "tooltip")       
+					 .style("opacity", 0);
 
 var mapSvg = body.select("#map").append("svg")
-    .attr("width", mapWidth)
-    .attr("height",mapHeight)
-    .attr("stroke", "#ccc")
-    .attr("stroke-width", 1)
-    .on("click", stopped, true);
+								.attr("width", mapWidth)
+								.attr("height",mapHeight)
+								.attr("stroke", "#ccc")
+								.attr("stroke-width", 1)
+								.on("click", stopped, true);
 
 mapSvg.append("rect")
-    .attr("class", "background")
-    .attr("width", mapWidth)
-    .attr("height",mapHeight)
-    .on("click", reset);
+      .attr("class", "background")
+      .attr("width", mapWidth)
+      .attr("height",mapHeight)
+      .on("click", reset);
 
 var base_g = mapSvg.append("g");
 var top_g = mapSvg.append("g");
@@ -396,11 +410,12 @@ function union(arrA, arrB) {
 
 /* Load in all the files */
 d3.queue()
-	.defer(d3.json, "world-continents.json")
-	.defer(d3.json, "world-countries.json")
-	.defer(d3.csv, "world_country_names.csv")
-	.defer(d3.csv, "wrangle.csv")
+  .defer(d3.json, "world-continents.json")
+  .defer(d3.json, "world-countries.json")
+  .defer(d3.csv, "world_country_names.csv")
+  .defer(d3.csv, "sankey.csv")
   .await(setup);
+/* End file loading section */
 
 function setup(error, worldContinents, worldCountries, names, exchangeData) {
 	if (error) throw error;
@@ -424,62 +439,61 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
     .append("option")
     .text(function (d) { return d; });
 
-  var exchangeSelect = d3.select("#exchanges")
-        .append("div")
-        .append("select")
-        .on('change', onExchangeChange)
-        .attr("class", "custom-select")
-        .attr("id", "country")
+	var exchangeSelect = d3.select("#exchanges")
+						   .append("div")
+						   .append("select")
+						   .on('change', onExchangeChange)
+						   .attr("class", "custom-select")
+						   .attr("id", "country")
   
-      exchangeSelect.selectAll("option")
-        .data(d3.map(exchangeData, function(d){return d["procedure"];}).keys().sort())
-        .enter()
-        .append("option")
-        .text(function (d) { return d; });
+    exchangeSelect.selectAll("option")
+				  .data(d3.map(exchangeData, function(d){return d["procedure"];}).keys().sort())
+				  .enter()
+				  .append("option")
+				  .text(function (d) { return d; });
 
 	var continentsData = topojson.feature(worldContinents, worldContinents.objects.continent).features;
 	var countriesData = topojson.feature(worldCountries, worldCountries.objects.countries).features;
 
 	// set up continents
 	var continent_gs = base_g.append("g")
-    .attr("class", "feature continent")
-    .selectAll(".feature")
-    .data(continentsData)
-    .enter()
-    .append("path")
-    .attr("name", function(d) {return d.properties.continent;})
-    .on("click", continentClicked)
-    .attr("d", path);
+							 .attr("class", "feature continent")
+							 .selectAll(".feature")
+							 .data(continentsData)
+							 .enter()
+							 .append("path")
+							 .attr("name", function(d) {return d.properties.continent;})
+							 .on("click", continentClicked)
+							 .attr("d", path);
 
-  base_g.append("path")
-    .datum(topojson.mesh(worldContinents, worldContinents.objects.continent, function(a, b) { return a !== b; }))
-    .attr("class", "mesh")
-    .attr("d", path);
+	base_g.append("path")
+		  .datum(topojson.mesh(worldContinents, worldContinents.objects.continent, function(a, b) { return a !== b; }))
+		  .attr("class", "mesh")
+		  .attr("d", path);
 
-  var toggleButtonContainer = mapSvg.append("g");
+	var toggleButtonContainer = mapSvg.append("g");
 
-  toggleButtonContainer.append("rect")
-    .attr("id", "toggle-cluster")
-    .attr("x", 15)
-    .attr("y", 15)
-    .attr("rx", 5);
+	toggleButtonContainer.append("rect")
+						 .attr("id", "toggle-cluster")
+						 .attr("x", 15)
+						 .attr("y", 15)
+						 .attr("rx", 5);
     
-  toggleButtonContainer.append("text")
-    .attr("id", "toggle-cluster-text")
-    .attr("dx", 115)
-    .attr("dy", 30)
-    .attr("text-anchor", "middle")
-    .text("Switch to Comparison View");
+	toggleButtonContainer.append("text")
+						 .attr("id", "toggle-cluster-text")
+						 .attr("dx", 115)
+						 .attr("dy", 30)
+						 .attr("text-anchor", "middle")
+						 .text("Switch to Comparison View");
 
-  for (var c of continentsData) {
-    var centroid = path.centroid(c);
+	for (var c of continentsData) {
+		var centroid = path.centroid(c);
 		continentCentroids[c.properties.continent] = {
 			  x: path.centroid(c)[0],
 			  y: path.centroid(c)[1],
 			  radius: 0
 		};
 	}
-
   
   /* var countriesDataCopy = Array.from(countriesData);
   var d_ids = new Set(countriesDataCopy.map(function(d) { return parseInt(d.id); }));
@@ -617,17 +631,43 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
             .style("opacity", 0); 
     });
 
-  d3.select("#toggle-cluster")
-    .on("click", function() {
-      continent_gs = d3.selectAll(".feature.continent");
-      var clusteredCentroids = d3.selectAll(".centroid");
-      return toggleCluster(continent_gs, clustered, clusteredCentroids);
+	var centroidElements = base_g.selectAll(".centroid")
+								 .data(centroidItems)
+								 .enter()
+								 .append("g");
+
+	var centroids = centroidElements.append("circle")
+									.attr("class", "centroid")
+									.attr("fill", function(d) { return "#a0a0f0"; })  // switch for gain/loss color
+									.attr("r", function(d) { return d.radius; })
+									.attr("cx", function(d) { return d.x; })
+									.attr("cy", function(d) { return d.y; })
+									.attr("stroke", function(d) { return d.color; })
+									.attr("stroke-width", "2")
+									.on("click", countryClicked)
+									.on("mouseover", function(d) {
+										tooltipDiv.transition()    
+												  .duration(200)    
+												  .style("opacity", 1);    
+										tooltipDiv.html(d.name)  
+												  .style("left", (d3.event.pageX) + "px")   
+												  .style("top", (d3.event.pageY - 28) + "px");  
+									})          
+									.on("mouseout", function(d) {   
+										tooltipDiv.transition()    
+												  .duration(500)    
+												  .style("opacity", 0); 
+									});
+
+	d3.select("#toggle-cluster").on("click", function() {
+		continent_gs = d3.selectAll(".feature.continent");
+		var clusteredCentroids = d3.selectAll(".centroid");
+		return toggleCluster(continent_gs, clustered, clusteredCentroids);
     });
-  d3.select("#toggle-cluster-text")
-    .on("click", function() {
-      continent_gs = d3.selectAll(".feature.continent");
-      var clusteredCentroids = d3.selectAll(".centroid");
-      return toggleCluster(continent_gs, clustered, clusteredCentroids);
+	d3.select("#toggle-cluster-text").on("click", function() {
+		continent_gs = d3.selectAll(".feature.continent");
+		var clusteredCentroids = d3.selectAll(".centroid");
+		return toggleCluster(continent_gs, clustered, clusteredCentroids);
     });
 }
 
@@ -662,45 +702,43 @@ function countryChange() {
 }
 
 function toggleCluster(continent_gs, clustered, clusteredCentroids) {
-    if (!clustered) {
-      startCluster(clusteredCentroids.data());
-      d3.select("#toggle-cluster-text")
-        .text("Switch to Geographical View");
+	if (!clustered) {
+		startCluster(clusteredCentroids.data());
+		d3.select("#toggle-cluster-text").text("Switch to Geographical View");
     } else {
-      startUncluster(clusteredCentroids, continent_gs);
-      d3.select("#toggle-cluster-text")
-        .text("Switch to Comparison View");
+		startUncluster(clusteredCentroids, continent_gs);
+		d3.select("#toggle-cluster-text").text("Switch to Comparison View");
     }
-  }
+}
 
-  function startCluster(data) {
+function startCluster(data) {
     var clusterWaitLayer = top_g.append("rect")
-      .attr("class", "clusterWaitLayer")
-      .attr("width", mapWidth)
-      .attr("height",mapHeight);
+								.attr("class", "clusterWaitLayer")
+								.attr("width", mapWidth)
+								.attr("height",mapHeight);
 
     var clusterWaitText = top_g.append("text")
-      .attr("class", "clusterWaitText")
-      .attr("dx", mapWidth/2)
-      .attr("dy",mapHeight/2)
-      .attr("font-size", "48pt")
-      .attr("font-family", "sans-serif")
-      .attr("text-anchor", "middle")
-      .text("Clustering...");
+							   .attr("class", "clusterWaitText")
+							   .attr("dx", mapWidth/2)
+							   .attr("dy",mapHeight/2)
+							   .attr("font-size", "48pt")
+							   .attr("font-family", "sans-serif")
+							   .attr("text-anchor", "middle")
+							   .text("Clustering...");
 
     mapSvg.transition()
-      .duration(750)
-      .call( zoom.transform, d3.zoomIdentity.translate(0,0).scale(1));
+		  .duration(750)
+		  .call( zoom.transform, d3.zoomIdentity.translate(0,0).scale(1));
 
     base_g.selectAll(".centroid")
-      .attr("cx", function(d) { 
-        d.x = d.origX; // reset initial x-coordinate
-        return d.origX;
-      })
-      .attr("cy", function(d) { 
-        d.y = d.origY; // reset initial y-coordinate
-        return d.origY;
-      });
+		  .attr("cx", function(d) { 
+				d.x = d.origX; // reset initial x-coordinate
+				return d.origX;
+			})
+		  .attr("cy", function(d) { 
+				d.y = d.origY; // reset initial y-coordinate
+				return d.origY;
+			});
 
     data.forEach(function(d) {
       switch (d.cluster) {
@@ -775,9 +813,8 @@ function toggleCluster(continent_gs, clustered, clusteredCentroids) {
           return startGroupCluster(data);
         })
     }
-
     clustered = true;
-  }
+}
 
   function startGroupCluster(data) {
     for (d of data) {
@@ -787,8 +824,8 @@ function toggleCluster(continent_gs, clustered, clusteredCentroids) {
     }
 
     d3.selectAll(".feature.continent").transition()    
-            .duration(500)    
-            .style("opacity", "0");
+									  .duration(500)    
+									  .style("opacity", "0");
     clusterSimulation2
       .nodes(data)
       .alpha(1)
@@ -818,58 +855,54 @@ function toggleCluster(continent_gs, clustered, clusteredCentroids) {
     top_g.selectAll(".clusterWaitText").remove();
     
     continent_gs.transition()    
-              .duration(500)    
-              .style("opacity", "1");
+                .duration(500)    
+                .style("opacity", "1");
     clusteredCentroids.transition()
-      .duration(500)
-      .attr("cx", function(d) { return d.origX; })
-      .attr("cy", function(d) { return d.origY; });
+					  .duration(500)
+					  .attr("cx", function(d) { return d.origX; })
+					  .attr("cy", function(d) { return d.origY; });
 
     mapSvg.transition()
-      .duration(750)
-      .call(zoom.transform, d3.zoomIdentity.translate(0,0).scale(1));
+		  .duration(750)
+		  .call(zoom.transform, d3.zoomIdentity.translate(0,0).scale(1));
 
     clustered = false;
-  }
-
-function updateYearsBanner(lower, upper) {
-  var select = d3.select("#yrs")
-          .text("Number of Exchanges: " + lower + " - " + upper);
 }
 
-updateYearsBanner(lower, upper);
+function updateYearsBanner(lower, upper) {
+	var select = d3.select("#yrs")
+				   .text("Number of Exchanges: " + lower + " - " + upper);
+}
 
-// When a continent is clicked, zoom in and show the country level map
 function continentClicked(d) {
-  if (!clustered) {
-    if (active.node() === this) return reset();
-    active.classed("active", false);
-    active = d3.select(this)
-      .classed("active", true)
-      .attr("cursor", "pointer");
-
-    if (d.properties.continent != "Asia" && d.properties.continent != "Oceania") {
-      var bounds = path.bounds(d),
-        dx = bounds[1][0] - bounds[0][0],
-        dy = bounds[1][1] - bounds[0][1],
-        x = (bounds[0][0] + bounds[1][0]) / 2,
-        y = (bounds[0][1] + bounds[1][1]) / 2,
-        scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx /mapWidth, dy /mapHeight))),
-        translate = [mapWidth / 2 - scale * x,mapHeight / 2 - scale * y];
-    } else if (d.properties.continent == "Asia") {
-      var scale = 2,
-        translate = [-1000, 0];
-    } else {
-      var scale = 2,
-        translate = [-1000, -400];
-    }
-
-    mapSvg.transition()
-        .duration(750)
-        .call( zoom.transform, d3.zoomIdentity.translate(translate[0],translate[1]).scale(scale));
-  } else {
-    d3.select(this).attr("cursor", "default")
-  }
+// When a continent is clicked, zoom in and show the country level map
+	if (!clustered) {
+		if (active.node() === this) return reset();
+		active.classed("active", false);
+		active = d3.select(this)
+				   .classed("active", true)
+				   .attr("cursor", "pointer");
+		if (d.properties.continent != "Asia" && d.properties.continent != "Oceania") {
+			var bounds = path.bounds(d),
+				dx = bounds[1][0] - bounds[0][0],
+				dy = bounds[1][1] - bounds[0][1],
+				x = (bounds[0][0] + bounds[1][0]) / 2,
+				y = (bounds[0][1] + bounds[1][1]) / 2,
+				scale = Math.max(1, Math.min(8, 0.9 / Math.max(dx /mapWidth, dy /mapHeight))),
+				translate = [mapWidth / 2 - scale * x,mapHeight / 2 - scale * y];
+		} else if (d.properties.continent == "Asia") {
+			var scale = 2,
+				translate = [-1000, 0];
+		} else {
+			var scale = 2,
+				translate = [-1000, -400];
+		}
+		mapSvg.transition()
+			  .duration(750)
+			  .call( zoom.transform, d3.zoomIdentity.translate(translate[0],translate[1]).scale(scale));
+	} else {
+		d3.select(this).attr("cursor", "default")
+	}
 }
 
 function countryClicked(d) {
@@ -911,29 +944,29 @@ function countryClicked(d) {
 }
 
 function reset() {
-  active.classed("active", false);
-  active = d3.select(null);
+	active.classed("active", false);
+	active = d3.select(null);
 
-  mapSvg.transition()
-      .duration(750)
-      .call( zoom.transform, d3.zoomIdentity );
+	mapSvg.transition()
+		  .duration(750)
+		  .call( zoom.transform, d3.zoomIdentity );
 }
 
 function zoomed() {
-  base_g.style("stroke-width", 1.5 / d3.event.transform.k + "px");
-  base_g.attr("transform", d3.event.transform); 
+	base_g.style("stroke-width", 1.5 / d3.event.transform.k + "px");
+	base_g.attr("transform", d3.event.transform); 
 }
 
-// If the drag behavior prevents the default click,
-// also stop propagation so we don’t click-to-zoom.
 function stopped() {
-  if (d3.event.defaultPrevented) d3.event.stopPropagation();
+	// If the drag behavior prevents the default click,
+	// also stop propagation so we don’t click-to-zoom.
+	if (d3.event.defaultPrevented) d3.event.stopPropagation();
 }
 
 function clusterTick() {
-  base_g.selectAll(".centroid")
-      .attr("cx", function(d) { return d.x; })
-      .attr("cy", function(d) { return d.y; });
+	base_g.selectAll(".centroid")
+		  .attr("cx", function(d) { return d.x; })
+		  .attr("cy", function(d) { return d.y; });
 }
 
 function collide(alpha, data) {	
@@ -966,332 +999,334 @@ function collide(alpha, data) {
   });
 }
 
-//INITIALIZATION
-updateTimeline("All");
-d3.select("#button1").classed("b_clicked", true);
-d3.select("#button3").classed("b_clicked", true);
-
 function updateTimeline(exchangeType) {
+	d3.csv("sankey.csv", 
+		function(d) {
+			d.exchange = +d["procedure"];
+			d.land = +d["area"];
+			d.people = +d["pop"];
+			d.year = d["year"];
+			d.count = d["count"];
+			return d;
+		}, 
+		function(error, data) {
+			if (error) throw error;
+      
+			timelineSvg.selectAll(".focus").remove();
+			timelineSvg.selectAll(".context").remove();
+      
+			var x = d3.scaleLinear().range([0, width]),
+				y2 = d3.scaleLinear().range([height2, 0]);
+      
+			var yTicks = 6;
+			if (exchangeType=="Annexation") {
+				yTicks = 3;
+			}
+			if (exchangeType=="Conquest") {
+				yTicks = 4;
+			}
+			if (exchangeType=="Unification") {
+				yTicks = 6;
+			}
 
-  d3.csv("wrangle.csv", 
-    function(d) {
-      d.exchange = +d["procedure"];
-      d.land = +d["area"];
-      d.people = +d["pop"];
-      d.year = d["year"];
-      d.count = d["count"];
+			var xAxis = d3.axisBottom(x).ticks(20).tickFormat(d3.format(".4")),
+				yAxis2 = d3.axisLeft(y2).ticks(yTicks);
 
-      return d;
-    }, 
-    function(error, data) {
-      if (error) throw error;
+			var brush = d3.brushX()
+						  .extent([[0, 0], [width, height2]])
+						  .on("brush end", brushed);
       
-      timelineSvg.selectAll(".focus").remove();
-      timelineSvg.selectAll(".context").remove();
+			var area2 = d3.area()
+						  .curve(d3.curveStep)
+						  .x(function(d) { return x(d["year"]/*.year*/); })
+						  .y0(height2)
+						  .y1(function(d) { return y2(d["count"]/*.count*/); });
       
-      var x = d3.scaleLinear().range([0, width]),
-        y2 = d3.scaleLinear().range([height2, 0]);
+			var focus = timelineSvg.append("g")
+								   .attr("class", "focus")
+								   .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
       
-      var yTicks = 6;
-      if (exchangeType=="Annexation") {
-        yTicks = 3;
-      }
-      if (exchangeType=="Conquest") {
-        yTicks = 4;
-      }
-      if (exchangeType=="Unification") {
-        yTicks = 6;
-      }
+			var context = timelineSvg.append("g")
+									 .attr("class", "context")
+									 .attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
 
-    var xAxis = d3.axisBottom(x).ticks(20).tickFormat(d3.format(".4")),
-      yAxis2 = d3.axisLeft(y2).ticks(yTicks);
-
-    var brush = d3.brushX()
-      .extent([[0, 0], [width, height2]])
-      .on("brush end", brushed);
-      
-    var area2 = d3.area()
-      .curve(d3.curveStep)
-      .x(function(d) { return x(d["year"]/*.year*/); })
-      .y0(height2)
-      .y1(function(d) { return y2(d["count"]/*.count*/); });
-      
-    var focus = timelineSvg.append("g")
-      .attr("class", "focus")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-      
-    var context = timelineSvg.append("g")
-      .attr("class", "context")
-      .attr("transform", "translate(" + margin2.left + "," + margin2.top + ")");
-
+			data4timeline = []
+			for (i=1816; i<=2018; i++) {
+				year_string = "" + i;
+				data4timeline.push( {"year": year_string, "count": 0, "pop": 0, "area": 0} );
+			}
     
-    data4timeline = []
-    for (i=1816; i<=2018; i++) {
-      year_string = "" + i;
-      data4timeline.push( {"year": year_string, "count": 0, "pop": 0, "area": 0} );
-    }
+			for (i=0; i<data.length; i++) {
+				if (exchangeType=="All" || data[i]["procedure"]==exchangeType) {
+					thisYear = data[i]["year"]
+					for (j=1816; j<=2018; j++) {
+						if (thisYear == j) {
+							data4timeline[j-1816]["count"] += 1;
+						}
+					}
+				}
+			}
     
-    for (i=0; i<data.length; i++) {
-      if (exchangeType=="All" || data[i]["procedure"]==exchangeType) {
-        thisYear = data[i]["year"]
-        for (j=1816; j<=2018; j++) {
-          if (thisYear == j) {
-            data4timeline[j-1816]["count"] += 1;
-          }
-        }
-      }
-    }
+			// Set the timeline line graph domain
+			x.domain(d3.extent(data4timeline, function(d) { return d["year"]/*.year*/; }));
+			y2.domain([0, d3.max(data4timeline, function(d) { return d["count"]/*.count*/; })]);
+
+			// Draw the y-axis
+			focus.append("g")
+				 .attr("class", "axis axis--y")
+				 .attr("transform", "translate(10," + 0 + ")")
+				 .call(yAxis2);
     
-    // Set the timeline line graph domain
-    x.domain(d3.extent(data4timeline, function(d) { return d["year"]/*.year*/; }));
-    y2.domain([0, d3.max(data4timeline, function(d) { return d["count"]/*.count*/; })]);
+			// Draw the line graph given the data
+			context.append("path")
+				   .datum(data4timeline)
+				   .attr("class", "area")
+				   .attr("d", area2);
 
-    // Draw the y-axis
-    focus.append("g")
-       .attr("class", "axis axis--y")
-       .attr("transform", "translate(10," + 0 + ")")
-       .call(yAxis2);
-    
-    
-    // Draw the line graph given the data
-    context.append("path")
-        .datum(data4timeline)
-        .attr("class", "area")
-        .attr("d", area2);
+			// Draw the x-axis
+			context.append("g")
+				   .attr("class", "axis axis--x")
+				   .attr("transform", "translate(0," + height2 + ")")
+				   .call(xAxis);
 
-    // Draw the x-axis
-    context.append("g")
-        .attr("class", "axis axis--x")
-        .attr("transform", "translate(0," + height2 + ")")
-        .call(xAxis);
-
-    // Draw the brush
-    context.append("g")
-        .attr("class", "brush")
-        .call(brush)
-        .call(brush.move, x.range());
-  
-});
-
+			// Draw the brush
+			context.append("g")
+				   .attr("class", "brush")
+				   .call(brush)
+				   .call(brush.move, x.range());
+		});
 }
 
-// Change values based on exchange type (ex. Annexation)
 function onExchangeChange() {
-  var selected = d3.select(this).property("value");
+	// Change values based on exchange type (ex. Annexation)
+	var selected = d3.select(this).property("value");
     exchangeType = selected;
     getNewData(lower, upper, isPeople, exchangeType, gains);
     updateTimeline(exchangeType);
 };
 
-// Change values based on timeline
 function brushed() {
-  var s = d3.event.selection || x.range();
-  var min_year = Math.ceil(s[0]/4.63 + 1815);		// Gets the minimum
-  var max_year = Math.floor(s[1]/4.63 + 1815);		// Gets the maximum
-  var range_years = [min_year, max_year]; 
+	// Change values based on timeline
+	var s = d3.event.selection || x.range();
+	var min_year = Math.ceil(s[0]/4.63 + 1815);			// Gets the minimum
+	var max_year = Math.floor(s[1]/4.63 + 1815);		// Gets the maximum
+	var range_years = [min_year, max_year]; 
 
-  lower = min_year
-  upper = max_year
+	lower = min_year
+	upper = max_year
 
-  updateYearsBanner(lower, upper);
+	updateYearsBanner(lower, upper);
 
-  // update bubbles for change in timeline
-  if (gains != 2) {
-      getNewData(lower, upper, isPeople, exchangeType, gains);
-      //updateBubbles(newData);
-
+	// update bubbles for change in timeline
+	if (gains != 2) {
+		getNewData(lower, upper, isPeople, exchangeType, gains);
     }
-   else {
-      getNewNetData(lower, upper, isPeople, exchangeType, gains);	
-   }
-   if (sankeyPresent == true) {
-	  updateSankey(lower, upper, exchangeType, selected, !isPeople);
-   }
+	else {
+		getNewNetData(lower, upper, isPeople, exchangeType, gains);	
+	}
+	if (sankeyPresent == true) {
+		updateSankey(lower, upper, exchangeType, selected, !isPeople);
+	}
 }
 
-// Generate new centroid data with updated parameters
 function getNewData(lower_bound, upper_bound, type, exchange, gains) {
+	// Generate new centroid data with updated parameters
 
-var check = d3.csv("wrangle.csv", 
-        function(d) {
-          d.exchange = d["procedure"];
-          d.land = +d["area"];
-          d.people = +d["pop"];
-          d.year = d["year"];
-          d.gainer = d["gainer"];
-          d.loser = d["loser"];
-
-          return d;
-        }, 
-        function(error, data) {
-          if (error) throw error;
-
-          var color = d3.scaleOrdinal()
-                    .domain(data.map(function(d){ return d.year; }))
-                    .range(['#fbb4ae','#b3cde3','#ccebc5','#decbe4','#fed9a6', '#ffe9a8','#b9bfe3','#fddaec','#cccccc']);
-
-            var variable = gains == 0 ? "gainer" : "loser";
-
-            var data3 = [];
-            for (i=0; i < data.length; i++) {
-              var alreadyPresent = false;
-              entity2check = data[i][variable];
-              index2save = null;
-              for (j=0; j < data3.length; j++) {
-                if (data3[j][variable] == entity2check) {
-                  index2save = j;
-                  alreadyPresent = true;
-                }
-              }
-              if (alreadyPresent == true) {
-                data3[index2save]["land"] += data[i]["land"];
-                data3[index2save]["people"] += data[i]["people"];
-              }
-              else {
-                data3.push(data[i]);
-              }
-            }
-            completeUpdate(data3, lower_bound, upper_bound, type, exchange, gains, false);
-
-        });
+	var check = d3.csv("sankey.csv", 
+						// populate the fields correctly
+						function(d) {
+							d.exchange = d["procedure"];
+							d.land = +d["area"];
+							d.people = +d["pop"];
+							d.year = d["year"];
+							d.gainer = d["gainer"];
+							d.loser = d["loser"];
+							return d;
+						}, 
+						function(error, data) {
+							if (error) throw error;
+							var color = d3.scaleOrdinal()
+										  .domain(data.map(function(d){ return d.year; }))
+										  .range(['#fbb4ae','#b3cde3','#ccebc5','#decbe4','#fed9a6', '#ffe9a8','#b9bfe3','#fddaec','#cccccc']);
+							var variable = gains == 0 ? "gainer" : "loser";
+							var all = exchangeType == "All" ? true : false;
+							var data3 = [];
+							for (i=0; i < data.length; i++) {
+								var alreadyPresent = false;
+								entity2check = data[i][variable];
+								dataExchange = data[i]["exchange"];
+								index2save = null;
+								for (j=0; j < data3.length; j++) {
+									// data row matches gainer/loser and type of exchange
+									if (data3[j][variable] == entity2check && (data3[j]["exchange"] == exchangeType || all)) {
+										index2save = j;
+										alreadyPresent = true;
+									}
+								}
+								// check if exchange type matches
+								if (dataExchange == exchangeType || all) {
+									// check to see if country is already present
+									if (alreadyPresent) {
+										data3[index2save]["land"] += data[i]["land"];
+										data3[index2save]["people"] += data[i]["people"];
+									}
+									else {
+										data3.push(data[i]);
+									}
+								}
+							}
+							completeUpdate(data3, lower_bound, upper_bound, type, exchange, gains, false);
+						});
 }
 
 function getNewNetData(lower_bound, upper_bound, type, exchange) {
 
-  d3.csv("wrangle.csv", 
-          function(d) {
-            d.exchange = d["procedure"];
-            d.land = +d["area"];
-            d.people = +d["pop"];
-            d.year = d["year"];
-            d.gainer = d["gainer"];
-            d.loser = d["loser"];
+	d3.csv("sankey.csv", 
+			function(d) {
+				d.exchange = d["procedure"];
+				d.land = +d["area"];
+				d.people = +d["pop"];
+				d.year = d["year"];
+				d.gainer = d["gainer"];
+				d.loser = d["loser"];
+				return d;
+			}, 
+			function(error, data) {
+				if (error) throw error;
 
-            return d;
-          }, 
-          function(error, data) {
-            if (error) throw error;
+				var data3 = [];
+				for (i=0; i < data.length; i++) {
+					var alreadyPresentGain = false;
+					var alreadyPresentLoss = false;
+					var entity2check = data[i]["gainer"];
+					var otherentity2check = data[i]["loser"];
+					var dataExchange = data[i]["exchange"];
+					var all = exchangeType == "All" ? true : false;
+					var index2save = null;
+					var index2save1 = null;
+					for (j=0; j < data3.length; j++) {
+						// both gainer/loser within the data and exchange type must match for the row
+						if (data3[j]["nation"] == entity2check && (data3[j]["exchange"] == exchangeType || all)) {
+							// nation is the gainer
+							index2save = j;
+							alreadyPresentGain = true;
+						}
+						if (data3[j]["nation"] == otherentity2check && (data3[j]["exchange"] == exchangeType || all)) {
+							// nation is the loser
+							index2save1 = j;
+							alreadyPresentLoss = true;	
+						}
+					}
 
-              var data3 = [];
-              for (i=0; i < data.length; i++) {
-                var alreadyPresentGain = false;
-                var alreadyPresentLoss = false;
-                entity2check = data[i]["gainer"];
-                otherentity2check = data[i]["loser"];
-                index2save = null;
-                index2save1 = null;
-                for (j=0; j < data3.length; j++) {
-                  if (data3[j]["entity"] == entity2check) {
-                    index2save = j;
-                    alreadyPresentGain = true;
-                  }
-                  if (data3[j]["entity"] == otherentity2check) {
-                    index2save1 = j;
-                    alreadyPresentLoss = true;	
-                  }
-                }
-                if (alreadyPresentGain == false) {
-                  data[i]["entity"] = data[i]["gainer"];
-                  data3.push(data[i]);
-                }
-                else {
-                  data3[index2save]["land"] += data[i]["land"];
-                  data3[index2save]["people"] += data[i]["people"];
-                }
-                if (alreadyPresentLoss == false) {
-                  newdata = {};
-                  newdata["exchange"] = data[i]["exchange"];
-                  newdata["land"] = -1 * data[i]["land"];
-                  newdata["people"] = -1 * data[i]["people"];
-                  newdata["entity"] = data[i]["loser"];
-                  newdata["year"] = data[i]["year"];
-                  data3.push(newdata);
-                }
-                else {
-                  data3[index2save1]["land"] -= data[i]["land"];
-                  data3[index2save1]["people"] -= data[i]["people"];
-                }
-              };
+					// the exchange type must match
+					if (dataExchange == exchangeType || all) {
+						// the gainer does not already exist as a nation in the data
+						if (!alreadyPresentGain) {
+							data[i]["nation"] = data[i]["gainer"];  // gets the name of the country for the loss
+							data3.push(data[i]);
+						}
+						else {
+							data3[index2save]["land"] += data[i]["land"];
+							data3[index2save]["people"] += data[i]["people"];
+						}
 
-              for (i=0; i < data3.length; i++) {
-                data3[i]["peopleLoss"] = data3[i]["people"] >= 0 ? false : true;
-                data3[i]["landLoss"] = data3[i]["land"] >= 0 ? false : true;
-              }					
-
-              completeUpdate(data3, lower_bound, upper_bound, type, exchange, gains, true);
-
-          });
-
+						// the loser does not already exist as a nation in the data
+						if (alreadyPresentLoss == false ) {
+							newdata = {};
+							newdata["nation"] = data[i]["loser"];   // gets the name of the country for the loss
+							newdata["exchange"] = data[i]["exchange"];
+							newdata["land"] = -1 * data[i]["land"];
+							newdata["people"] = -1 * data[i]["people"];
+							newdata["year"] = data[i]["year"];
+							data3.push(newdata);
+						}
+						else {
+							data3[index2save1]["land"] -= data[i]["land"];
+							data3[index2save1]["people"] -= data[i]["people"];
+						}
+					};
+				}
+				for (i=0; i < data3.length; i++) {
+					data3[i]["peopleLoss"] = data3[i]["people"] >= 0 ? false : true;
+					data3[i]["landLoss"] = data3[i]["land"] >= 0 ? false : true;
+				}					
+				completeUpdate(data3, lower_bound, upper_bound, type, exchange, gains, true);
+			});
 }
 
-// Complete the update after getting data
 function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gains, isNet) {
+// Complete the update after getting data
 
   centroidItems = d3.selectAll(".centroid").data();
 
-  // refresh all chosen variables
-  for (i=0; i < centroidItems.length; i++) {
-    centroidItems[i]["chosen"] = false;
-  }
+	/*
+	// Debugging block
+	if (exchange=="Annexation") {
+		for (i=0; i < inputData.length; i++) {
+			if (inputData[i]["loser"] == "United States of America" && gains) {
+				console.log("UM");
+				console.log(inputData[i]["land"]);
+			}
+		}
+	}
+	*/
 
-  if (isNet==false) {
-    centroidItems.filter(function(d) {
-              return inputData.some(function(n) {
-                if ((gains == 0 && d.name == n.gainer) ||
-                    (gains == 1 && d.name == n.loser)) {
-                  d.exchange = n.procedure;
-                  d.land = n.land;
-                  d.gainer = n.gainer;
-                  d.loser = n.loser;
-                  d.year = n.year;
-                  d.people = n.people;
-                  d.chosen = true;
+	// refresh all chosen variables
+	for (i=0; i < centroidItems.length; i++) {
+		centroidItems[i]["chosen"] = false;
+	}
+  
+	if (isNet==false) {
+		centroidItems.filter(function(d) {
+            return inputData.some(function(n) {
+                if ((gains == 0 && d.name == n.gainer) || (gains == 1 && d.name == n.loser)) {
+					d.exchange = n.procedure;
+					d.land = n.land;
+					d.gainer = n.gainer;
+					d.loser = n.loser;
+					d.year = n.year;
+					d.people = n.people;
+					d.chosen = true;
                 }
-              })
-            });
-  }
-  else {
-    centroidItems.filter(function(d) {
-              return inputData.some(function(n) {
-                if (n.entity == d.name) {
-                  d.exchange = n.procedure;
-                  d.land = n.land;
-                  d.gainer = n.gainer;
-                  d.loser = n.loser;
-                  d.year = n.year;
-                  d.people = n.people;
-                  d.peopleLoss = n.peopleLoss;
-                  d.landLoss = n.landLoss;
-                  d.chosen = true;
+            })
+        });
+	}
+	else {
+		centroidItems.filter(function(d) {
+            return inputData.some(function(n) {
+                if (n.nation == d.name) {
+					d.exchange = n.procedure;
+					d.land = n.land;
+					d.gainer = n.gainer;
+					d.loser = n.loser;
+					d.year = n.year;
+					d.people = n.people;
+					d.peopleLoss = n.peopleLoss;
+					d.landLoss = n.landLoss;
+					d.chosen = true;
                 }
-              })
-            });
-  }
+            })
+        });
+	}
 
-          if (exchange != "All") {
-            items = centroidItems.filter( function(d) {
-              return +d.year >= lower_bound && +d.year <= upper_bound && d.exchange
-                && d.exchange == exchange && d.chosen;
-              });
-          }
-          else {
-            items = centroidItems.filter( function(d) {
-                return d.year >= lower_bound && d.year <= upper_bound && d.chosen;
-              });
-          }
-          updateBubbles(items, type, isNet);
+    items = centroidItems.filter(function(d) {
+									return d.year >= lower_bound && d.year <= upper_bound && d.chosen;
+								});
+    
+	updateBubbles(items, type, isNet);
 }
 
-// Update bubbles on the map with new data; type = People if true, else Land
 function updateBubbles(newData, type, isNet) {
-  // put in new data
-  var min = d3.min(newData, function(d) { return type == true ? Math.abs(d.people) : Math.abs(d.land);} );
-  var max = d3.max(newData, function(d) { return type == true ? Math.abs(d.people) : Math.abs(d.land);} );
+// Update bubbles on the map with new data; type = People if true, else Land
+  
+	// put in new data
+	var min = d3.min(newData, function(d) { return type == true ? Math.abs(d.people) : Math.abs(d.land);} );
+	var max = d3.max(newData, function(d) { return type == true ? Math.abs(d.people) : Math.abs(d.land);} );
 
-  var newCentroids = base_g.selectAll(".centroid")
-    .data(newData);
+	var newCentroids = base_g.selectAll(".centroid")
+							 .data(newData);
 
-  newCentroids.exit().remove();
+	newCentroids.exit().remove();
   
   // create new centroids
   newCentroids.enter().append("circle")
@@ -1338,269 +1373,250 @@ function updateBubbles(newData, type, isNet) {
     });
 
     // if previous nodes were "clustered", recluster
-  if (clustered) {
-    startCluster(newData);
-  } else {
-    continent_gs = d3.selectAll(".feature.continent")
-    startUncluster(newCentroids, continent_gs);
-  }
+	if (clustered) {
+		startCluster(newData);
+	} else {
+		continent_gs = d3.selectAll(".feature.continent")
+		startUncluster(newCentroids, continent_gs);
+	}
 }
 
-// Update whether Land or People
 function updateData(value) {
-  if (value == false) {
-    d3.select("#button1").classed("b_clicked", true);
-    d3.select("#button2").classed("b_clicked", false);
-  }
-  else {
-    d3.select("#button1").classed("b_clicked", false);
-    d3.select("#button2").classed("b_clicked", true);
-  }
-  isPeople = value;
-  if (gains != 2) {
-    getNewData(lower, upper, isPeople, exchangeType, gains);	
-  }
-  else {
-    getNewNetData(lower, upper, isPeople, exchangeType, gains);	
-  }
-  if (sankeyPresent == true) {
-	updateSankey(lower, upper, exchangeType, selected, !isPeople);
-  }
+	// Update whether Land or People
+	if (value == false) {
+		d3.select("#button1").classed("b_clicked", true);
+		d3.select("#button2").classed("b_clicked", false);
+	}
+	else {
+		d3.select("#button1").classed("b_clicked", false);
+		d3.select("#button2").classed("b_clicked", true);
+	}
+	isPeople = value;
+	if (gains != 2) {
+		getNewData(lower, upper, isPeople, exchangeType, gains);	
+	}
+	else {
+		getNewNetData(lower, upper, isPeople, exchangeType, gains);	
+	}
+	if (sankeyPresent == true) {
+		updateSankey(lower, upper, exchangeType, selected, !isPeople);
+	}
 }
 
-// Update whether Gains or Losses or Net
 function updateGains(value) {
+// Update whether Gains or Losses or Net
 
-  if (value == 0) {
-    d3.select("#button3").classed("b_clicked", true);
-    d3.select("#button4").classed("b_clicked", false);
-    d3.select("#button5").classed("b_clicked", false);
-  }
-  else if (value == 1) {
-    d3.select("#button3").classed("b_clicked", false);
-    d3.select("#button4").classed("b_clicked", true);
-    d3.select("#button5").classed("b_clicked", false);
-  }
-  else {
-    d3.select("#button3").classed("b_clicked", false);
-    d3.select("#button4").classed("b_clicked", false);
-    d3.select("#button5").classed("b_clicked", true);
-  }
-  gains = value;
-  if (gains != 2) {
-    getNewData(lower, upper, isPeople, exchangeType, gains);	
-  }
-  else {
-    getNewNetData(lower, upper, isPeople, exchangeType, gains);	
-  }
+	if (value == 0) {
+		d3.select("#button3").classed("b_clicked", true);
+		d3.select("#button4").classed("b_clicked", false);
+		d3.select("#button5").classed("b_clicked", false);
+	}
+	else if (value == 1) {
+		d3.select("#button3").classed("b_clicked", false);
+		d3.select("#button4").classed("b_clicked", true);
+		d3.select("#button5").classed("b_clicked", false);
+	}
+	else {
+		d3.select("#button3").classed("b_clicked", false);
+		d3.select("#button4").classed("b_clicked", false);
+		d3.select("#button5").classed("b_clicked", true);
+	}
+	gains = value;
+	if (gains != 2) {
+		getNewData(lower, upper, isPeople, exchangeType, gains);	
+	}
+	else {
+		getNewNetData(lower, upper, isPeople, exchangeType, gains);	
+	}
 }
-
-
-///////////////SANKEY/////////////////
-var marginSan = {top: 10, right: 10, bottom: 10, left: 68},
-    widthSan = 1038 - marginSan.left - marginSan.right,
-    heightSan = 500 - marginSan.top - marginSan.bottom;
   
 function updateSankey(lower_bound, upper_bound, exchangeType, country, isLand) {
+	sankeyPresent = true;
 
-  sankeyPresent = true;
+	var units = "km^2";
+	if (isLand == false) {
+		units = "people";
+	}
+  
+	var formatNumber = d3v3.format(",.0f"),    // zero decimal places
+		format = function(d) { return formatNumber(d) + " " + units; }, 
+		color = d3v3.scale.category20();  // d3.v3
+  
+	d3v3.csv("sankey.csv", function(error, data) {
+		var dataTimeTypeFiltered = data.filter(function(d) {
+			if (exchangeType != "All") {
+				return d.year >= lower_bound && d.year <= upper_bound && d.procedure == exchangeType;
+			}
+			else {
+				return d.year >= lower_bound && d.year <= upper_bound;
+			}
+		});
 
-  var units = "km^2";
-  if (isLand == false) {
-    units = "people";
-  }
-  
-  var formatNumber = d3v3.format(",.0f"),    // zero decimal places
-    format = function(d) { return formatNumber(d) + " " + units; }, 
-    color = d3v3.scale.category20();  // d3.v3
-    // color = d3.scaleOrdinal(d3.schemeCategory20);  // d3.v3
-  
-  
-  d3v3.csv("sankey.csv", function(error, data) {
-  
-    var dataTimeTypeFiltered = data.filter(function(d) {
-      if (exchangeType != "All") {
-        return d.year >= lower_bound && d.year <= upper_bound && d.procedure == exchangeType;
-      }
-      else {
-        return d.year >= lower_bound && d.year <= upper_bound;
-      }
-    });
+		//set up graph in same style as original example but empty
+		graph = {"nodes" : [], "links" : []};
 
-    //set up graph in same style as original example but empty
-    graph = {"nodes" : [], "links" : []};
-
-    dataTimeTypeFiltered.forEach(function (d) {
-      var amnt = d.area;
-      if (isLand == false) {
-        amnt = d.pop;
-      }
+		dataTimeTypeFiltered.forEach(function (d) {
+			var amnt = d.area;
+			if (isLand == false) {
+				amnt = d.pop;
+			}
       
-      if (d.gainer == country) {
-        graph.nodes.push({ "name": d.loser});
-        graph.nodes.push({ "name": d.gainer});
-        graph.links.push({ "source": d.loser,
-                   "target": d.gainer,
-                   "value": +amnt,
-                   "year": d.year,
-                   "entity":d.entity,
-                   "procedure":d.procedure
-                 });
-      }
+			if (d.gainer == country) {
+				graph.nodes.push({ "name": d.loser});
+				graph.nodes.push({ "name": d.gainer});
+				graph.links.push({ "source": d.loser,
+								   "target": d.gainer,
+								   "value": +amnt,
+								   "year": d.year,
+								   "entity":d.entity,
+								   "procedure":d.procedure
+                });
+			}
       
-      if (d.loser == country) {
-        var gainerPresent = false;
-        var loserPresent = false;
+			if (d.loser == country) {
+				var gainerPresent = false;
+				var loserPresent = false;
         
-        for (i=0; i<graph.nodes.length; i++) {
-          if (graph.nodes[i] == d.gainer) {
-            gainerPresent = true;
-          }
-          if (graph.nodes[i] == d.loser) {
-            gainerPresent = true;
-          }
-        }
+				for (i=0; i<graph.nodes.length; i++) {
+					if (graph.nodes[i] == d.gainer) {
+						gainerPresent = true;
+					}
+					if (graph.nodes[i] == d.loser) {
+						gainerPresent = true;
+					}
+				}
         
-        if (gainerPresent == false) {
-          graph.nodes.push({ "name": d.gainer + "*"});
-        }
+				if (gainerPresent == false) {
+					graph.nodes.push({ "name": d.gainer + "*"});
+				}
         
-        if (loserPresent == false) {
-          graph.nodes.push({ "name": d.loser});
-        }
-        graph.links.push({ "source": d.loser,
-                   "target": d.gainer + "*",
-                   "value": +amnt,
-                   "year": d.year,
-                   "entity": d.entity,
-                   "procedure": d.procedure
-                  });
-      }
-      
-    });
+				if (loserPresent == false) {
+					graph.nodes.push({ "name": d.loser});
+				}
+				graph.links.push({ "source": d.loser,
+								   "target": d.gainer + "*",
+								   "value": +amnt,
+								   "year": d.year,
+								   "entity": d.entity,
+								   "procedure": d.procedure
+                });
+			}
+		});
      
-    var tempSum = 0;
-    for (i=0; i<graph.links.length; i++) {
-      if (graph.links[i]["target"] == country) {
-        tempSum += graph.links[i]["value"];
-      }
-    }
-    numGroups = graph.nodes.length;
+		var tempSum = 0;
+		for (i=0; i<graph.links.length; i++) {
+			if (graph.links[i]["target"] == country) {
+				tempSum += graph.links[i]["value"];
+			}
+		}
+		numGroups = graph.nodes.length;
     
-    ///////////////////////////////
-    heightSan = (300 - marginSan.top - marginSan.bottom) * numGroups/6;
-    var length = d3.select("#chart")["_groups"][0][0].children.length;
-    if (length > 0) {
-      //console.log(d3.select("#chart")["_groups"][0][0].children[0].remove());
-      d3.select("#chart")["_groups"][0][0].children[0].remove();
-    }
+		heightSan = (300 - marginSan.top - marginSan.bottom) * numGroups/6;
+		var length = d3.select("#chart")["_groups"][0][0].children.length;
+		if (length > 0) {
+			d3.select("#chart")["_groups"][0][0].children[0].remove();
+		}
   
-    // append the svg canvas to the page
-    var sankeySvg = d3v3.select("#chart").append("svg")
-                    .attr("width", widthSan + marginSan.left + marginSan.right)
-                    .attr("height", heightSan + marginSan.top + marginSan.bottom)
-                  .append("g")
-                    .attr("transform", "translate(" + marginSan.left + "," + marginSan.top + ")");
+		// append the svg canvas to the page
+		var sankeySvg = d3v3.select("#chart").append("svg")
+											 .attr("width", widthSan + marginSan.left + marginSan.right)
+											 .attr("height", heightSan + marginSan.top + marginSan.bottom)
+											 .append("g")
+											 .attr("transform", "translate(" + marginSan.left + "," + marginSan.top + ")");
 
-    // Set the sankey diagram properties
-    var sankey = d3v3.sankey()
-           .nodeWidth(36)
-           .nodePadding(40)
-           .size([widthSan, heightSan]);
+		// Set the sankey diagram properties
+		var sankey = d3v3.sankey()
+						 .nodeWidth(36)
+						 .nodePadding(40)
+						 .size([widthSan, heightSan]);
 
-    var path = sankey.link();
-    ///////////////////////////////////
+		var path = sankey.link();
 
-    // return only the distinct / unique nodes
-    graph.nodes = d3v3.keys(d3v3.nest()
-                  .key(function (d) { return d.name; })
-                  .map(graph.nodes));
+		// return only the distinct / unique nodes
+		graph.nodes = d3v3.keys(d3v3.nest()
+									.key(function (d) { return d.name; })
+									.map(graph.nodes));
 
-    // loop through each link replacing the text with its index from node
-    graph.links.forEach(function (d, i) {
-       graph.links[i].source = graph.nodes.indexOf(graph.links[i].source);
-       graph.links[i].target = graph.nodes.indexOf(graph.links[i].target);
-    });
+		// loop through each link replacing the text with its index from node
+		graph.links.forEach(function (d, i) {
+			graph.links[i].source = graph.nodes.indexOf(graph.links[i].source);
+			graph.links[i].target = graph.nodes.indexOf(graph.links[i].target);
+		});
 
-    //now loop through each nodes to make nodes an array of objects
-    // rather than an array of strings
-    graph.nodes.forEach(function (d, i) {
-       graph.nodes[i] = { "name": d };
-    });
+		// now loop through each nodes to make nodes an array of objects rather than an array of strings
+		graph.nodes.forEach(function (d, i) {
+			graph.nodes[i] = { "name": d };
+		});
 
-    sankey.nodes(graph.nodes)
-        .links(graph.links)
-        .layout(32);
+		sankey.nodes(graph.nodes)
+			  .links(graph.links)
+			  .layout(32);
 
-    // add in the links
-    var link = sankeySvg.append("g").selectAll(".link2")
-                  .data(graph.links)
-                  .enter().append("path")
-                  .attr("class", "link2")
-                  .attr("d", path)
-                  .style("stroke-width", function(d) { return Math.max(1, d.dy); })
-                  .sort(function(a, b) { return b.dy - a.dy; });
+		// add in the links
+		var link = sankeySvg.append("g").selectAll(".link2")
+										.data(graph.links)
+										.enter().append("path")
+										.attr("class", "link2")
+										.attr("d", path)
+										.style("stroke-width", function(d) { return Math.max(1, d.dy); })
+										.sort(function(a, b) { return b.dy - a.dy; });
 
-    // add the link titles
-    link.append("title")
-      .text(function(d) {
-        var tName = d.target.name;
-          
-        if (tName.substring(tName.length-1,tName.length) == "*") {
-          tName = d.target.name.substring(0, d.target.name.length-1); 
-        }
-          
-        return d.year + "\n" + d.source.name + " → " + 
-        tName + "\n" + format(d.value) + "\n" + d.procedure + " of " + d.entity; 
-      });
+		// add the link titles
+		link.append("title")
+			.text(function(d) {
+				var tName = d.target.name;
+				if (tName.substring(tName.length-1,tName.length) == "*") {
+					tName = d.target.name.substring(0, d.target.name.length-1); 
+				}
+				return d.year + "\n" + d.source.name + " → " + tName + "\n" + format(d.value) + "\n" + d.procedure + " of " + d.entity; 
+			});
 
-    // add in the nodes
-    var node = sankeySvg.append("g").selectAll(".node2")
-                  .data(graph.nodes)
-                  .enter().append("g")
-                      .attr("class", "node2")
-                      .attr("transform", function(d) { 
-                        return "translate(" + d.x + "," + d.y + ")"; 
-                      })
-                      .call(d3v3.behavior.drag()
-                                 .origin(function(d) { return d; })
-                                 .on("dragstart", function() { 
-                                  this.parentNode.appendChild(this); })
-                                .on("drag", dragmove));
+		// add in the nodes
+		var node = sankeySvg.append("g").selectAll(".node2")
+										.data(graph.nodes)
+										.enter().append("g")
+												.attr("class", "node2")
+												.attr("transform", function(d) { 
+													return "translate(" + d.x + "," + d.y + ")"; 
+												})
+												.call(d3v3.behavior.drag()
+																   .origin(function(d) { return d; })
+																   .on("dragstart", function() { 
+																		this.parentNode.appendChild(this); })
+																   .on("drag", dragmove));
 
-    // add the rectangles for the nodes
-    node.append("rect")
-        .attr("height", function(d) { return d.dy; })
-        .attr("width", sankey.nodeWidth())
-        .style("fill", function(d) { 
-          return d.color = color(d.name.replace(/ .*/, "")); 
-        })
-        .style("stroke", function(d) { 
-          return d3v3.rgb(d.color).darker(2); 
-        })
-      .append("title")
-        .text(function(d) { 
-          return d.name + "\n" + format(d.value); 
+		// add the rectangles for the nodes
+		node.append("rect")
+			.attr("height", function(d) { return d.dy; })
+			.attr("width", sankey.nodeWidth())
+			.style("fill", function(d) { 
+				return d.color = color(d.name.replace(/ .*/, "")); 
+			})
+			.style("stroke", function(d) { 
+				return d3v3.rgb(d.color).darker(2); 
+			})
+		.append("title").text(function(d) { 
+			return d.name + "\n" + format(d.value); 
         });
 
-    // add in the title for the nodes
-    node.append("text")
-        .attr("x", -6)
-        .attr("y", function(d) { return d.dy / 2; })
-        .attr("dy", ".35em")
-        .attr("text-anchor", "end")
-        .attr("transform", null)
-        .text(function(d) { 
-          if (d.name.substring(d.name.length-1,d.name.length) == "*") {
-            return d.name.substring(0, d.name.length-1); 
-          }
-          else {
-            return d.name; 
-          }
-        })
-        .filter(function(d) { return d.x < widthSan / 2; })
-          .attr("x", 6 + sankey.nodeWidth())
-          .attr("text-anchor", "start");
+		// add in the title for the nodes
+		node.append("text")
+			.attr("x", -6)
+			.attr("y", function(d) { return d.dy / 2; })
+			.attr("dy", ".35em")
+			.attr("text-anchor", "end")
+			.attr("transform", null)
+			.text(function(d) { 
+				if (d.name.substring(d.name.length-1,d.name.length) == "*") {
+					return d.name.substring(0, d.name.length-1); 
+				}
+				else {
+					return d.name; 
+				}
+			})
+			.filter(function(d) { return d.x < widthSan / 2; })
+			.attr("x", 6 + sankey.nodeWidth())
+			.attr("text-anchor", "start");
 
 		// the function for moving the nodes
 		function dragmove(d) {
@@ -1610,21 +1626,6 @@ function updateSankey(lower_bound, upper_bound, exchangeType, country, isLand) {
 		}
 	});
 }
-
-
-//lower = 1820
-//upper = 1830
-//var countryOfInterestSan = "United Kingdom";
-
-//updateSankey(lower, upper, exchangeType, countryOfInterestSan, isPeople);
-
-/*
-isPeople = false;
-
-updateSankey(lower, upper, exchangeType, countryOfInterestSan, isPeople);
-
-console.log(d3.selectAll("svg"));
-*/
 
 /* end */
 
