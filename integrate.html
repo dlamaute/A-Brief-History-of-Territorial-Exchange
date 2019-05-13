@@ -349,6 +349,9 @@ var continentClusterCodes = {
 
 // Binning functions
 function radiusPop(pop) {
+  if (pop < 0) {
+    pop *= -1;
+  }
   if (pop < 1000) {
     return 4;
   }
@@ -370,6 +373,9 @@ function radiusPop(pop) {
 }
 
 function radiusLand(land) {
+  if (land < 0) {
+	land *= -1;
+  }
   if (land < 100) {
       return 4;
     }
