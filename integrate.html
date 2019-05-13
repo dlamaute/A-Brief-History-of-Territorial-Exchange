@@ -196,8 +196,12 @@ h1 {
 }
 
 #map {
-  display: block;
+  display: inline-block;
   margin: 50px;
+}
+
+#legend {
+  display: inline-block;
 }
   
 .base-svg {
@@ -236,7 +240,8 @@ h1 {
   <div id="heading"> Search by Country: </div>
   <div id="countries"></div>
   <div style="margin-left: 10%">Amount of Exchange (Explanation)</div>
-  <div id="map" style="margin-top: 1%; margin-left: 15%; margin-bottom: 1%"></div>
+  <div id="map" style="margin-top: 1%; margin-left: 5%; margin-right: 2%; margin-bottom: 1%"></div>
+  <div id="legend"><svg id="my_dataviz" height=500 width=375></svg></div>
   <div id="story-buttons" class="btn-group" role="group" aria-label="people" style="margin-left: 15%;">
     <button type="button" id="button1" class="btn btn-default" onClick="updateData(false);">Land</button>
     <button type="button" id="button2" class="btn btn-default" onClick="updateData(true);">People</button>
@@ -268,6 +273,76 @@ var gains = 0;						// Gains (0), Losses (1), Net (2) filter
 var selected = null;				// Country that is currently selected
 var sankeyPresent = false;			// Is a Sankey diagram on the display
 /* End global variables section */
+
+/* For the Legend */
+var legend = d3.select("#my_dataviz")
+
+// Legend
+legend.append("text").attr("x", 110).attr("y", 50).text("Legend").attr("font-family", "sans-serif").style("font-size", "25px")
+
+// Size Labels
+legend.append("text").attr("x", 30).attr("y", 100).text("Land").attr("font-family", "sans-serif").style("font-size", "20px")
+legend.append("text").attr("x", 190).attr("y", 100).text("People").attr("font-family", "sans-serif").style("font-size", "20px")
+
+// Labels -> Binning Scales by Land
+legend.append("circle").attr("cx",25).attr("cy",125).attr("r", 4).style("fill", "gray")
+legend.append("text").attr("x", 40).attr("y", 130).text("0-100").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",25).attr("cy",145).attr("r", 6).style("fill", "gray")
+legend.append("text").attr("x", 40).attr("y", 150).text("101-1000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",25).attr("cy",165).attr("r", 8).style("fill", "gray")
+legend.append("text").attr("x", 40).attr("y", 170).text("1001-10,000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",25).attr("cy",185).attr("r", 10).style("fill", "gray")
+legend.append("text").attr("x", 40).attr("y", 190).text("10,001-100,000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",25).attr("cy",210).attr("r", 12).style("fill", "gray")
+legend.append("text").attr("x", 40).attr("y", 215).text("100,001-1,000,000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",25).attr("cy",245).attr("r", 14).style("fill", "gray")
+legend.append("text").attr("x", 45).attr("y", 245).text(">1,000,000").style("font-size", "15px").attr("alignment-baseline","middle")
+
+// Labels -> Binning Scales by People
+legend.append("circle").attr("cx",195).attr("cy",125).attr("r", 4).style("fill", "gray")
+legend.append("text").attr("x", 210).attr("y", 130).text("0-1000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",195).attr("cy",145).attr("r", 6).style("fill", "gray")
+legend.append("text").attr("x", 210).attr("y", 150).text("1001-10,000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",195).attr("cy",165).attr("r", 8).style("fill", "gray")
+legend.append("text").attr("x", 210).attr("y", 170).text("10,001-100,000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",195).attr("cy",185).attr("r", 10).style("fill", "gray")
+legend.append("text").attr("x", 210).attr("y", 190).text("100,001-1,000,000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",195).attr("cy",210).attr("r", 12).style("fill", "gray")
+legend.append("text").attr("x", 210).attr("y", 215).text("1,000,001-10,000,000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",195).attr("cy",245).attr("r", 14).style("fill", "gray")
+legend.append("text").attr("x", 215).attr("y", 245).text(">10,000,000").style("font-size", "15px").attr("alignment-baseline","middle")
+
+
+// Continents Label
+legend.append("text").attr("x", 75).attr("y", 295).text("Clusters by Stroke").attr("font-family", "sans-serif").style("font-size", "20px")
+
+// Labels -> Continent Strokes
+legend.append("circle").attr("cx",45).attr("cy", 325).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#ffff00").attr("stroke-width", 4)
+legend.append("text").attr("x", 70).attr("y", 325).text("Africa").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",45).attr("cy", 355).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#00ffff").attr("stroke-width", 4)
+legend.append("text").attr("x", 70).attr("y", 355).text("Asia").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",45).attr("cy", 385).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#00ff00").attr("stroke-width", 4)
+legend.append("text").attr("x", 70).attr("y", 385).text("Europe").style("font-size", "15px").attr("alignment-baseline","middle")
+
+legend.append("circle").attr("cx",175).attr("cy", 325).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#0000ff").attr("stroke-width", 4)
+legend.append("text").attr("x", 200).attr("y", 325).text("North America").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",175).attr("cy", 355).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#007700").attr("stroke-width", 4)
+legend.append("text").attr("x", 200).attr("y", 355).text("South America").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",175).attr("cy", 385).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#ff00ff").attr("stroke-width", 4)
+legend.append("text").attr("x", 200).attr("y", 385).text("Oceania").style("font-size", "15px").attr("alignment-baseline","middle")
+
+
+// Net/Gain Label
+legend.append("text").attr("x", 100).attr("y", 435).text("Net Colors").attr("font-family", "sans-serif").style("font-size", "20px")
+
+// Labels -> Gain/Loss Colors
+legend.append("circle").attr("cx",45).attr("cy",465).attr("r", 12).style("fill", "lightblue")
+legend.append("text").attr("x", 70).attr("y", 465).text("Gain").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",175).attr("cy",465).attr("r", 12).style("fill", "lightcoral")
+legend.append("text").attr("x", 200).attr("y", 465).text("Loss").style("font-size", "15px").attr("alignment-baseline","middle")
+
+
+/* End Legend Initialization Section */
 
 /* For the buttons */
 updateTimeline("All");
@@ -364,7 +439,7 @@ function radiusPop(pop) {
   else if (pop < 1000000) {
     return 10;
   }
-  else if (pop < 100000000) {
+  else if (pop < 10000000) {
     return 12;
   }
   else {
