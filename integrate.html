@@ -3,7 +3,6 @@
 
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script>
-<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
 <script src="https://d3js.org/d3.v4.min.js"></script>
@@ -363,6 +362,7 @@ d3.queue()
   .await(setup);
 /* End file loading section */
 
+/* Initializes everything and sets defaults */
 function setup(error, worldContinents, worldCountries, names, exchangeData) {
 	if (error) throw error;
 
@@ -558,9 +558,9 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
     });
 }
 
+/* Changes the country selected if country dropdown has changed */
 function countryChange() {
 	// Update Sankey diagram if new country is selected
-    $("html, body").animate({ scrollTop: $(document).height() }, "slow");
     selected = d3.select(this).property("value");
     var isLand = !isPeople;
     updateSankey(lower, upper, exchangeType, selected, isLand);
@@ -572,6 +572,7 @@ function countryChange() {
     }
 }
 
+/* Switches between two map view */
 function toggleCluster(continent_gs, clustered, clusteredCentroids) {
 	if (!clustered) {
 		startCluster(clusteredCentroids.data());
@@ -582,6 +583,7 @@ function toggleCluster(continent_gs, clustered, clusteredCentroids) {
     }
 }
 
+/* Clusters the data given the continents */
 function startCluster(data) {
     var clusterWaitLayer = top_g.append("rect")
 								.attr("class", "clusterWaitLayer")
@@ -656,6 +658,7 @@ function startCluster(data) {
     clustered = true;
 }
 
+/* Updates map to comparision view */
 function startGroupCluster(data) {
     d3.selectAll(".feature.continent").transition()    
 									  .duration(500)    
@@ -682,6 +685,7 @@ function startGroupCluster(data) {
 		});
 }
 
+/* Updates map to geographic view */
 function startUncluster(clusteredCentroids, continent_gs) {
     clusterSimulation2.stop();
     clusterSimulation.stop();
@@ -703,13 +707,14 @@ function startUncluster(clusteredCentroids, continent_gs) {
     clustered = false;
 }
 
+/* Updates displayed year values */
 function updateYearsBanner(lower, upper) {
 	var select = d3.select("#yrs")
 				   .text("Number of Exchanges: " + lower + " - " + upper);
 }
 
+/* Zooms in to a continent if the countinent is clicked */
 function continentClicked(d) {
-// When a continent is clicked, zoom in and show the country level map
 	if (!clustered) {
 		if (active.node() === this) return reset();
 		active.classed("active", false);
@@ -739,6 +744,7 @@ function continentClicked(d) {
 	}
 }
 
+/* Update views if a country is clicked */
 function countryClicked(d) {
 	var centroids = base_g.selectAll(".centroid");
 	if (typeof centroids !== 'undefined') {
@@ -763,11 +769,11 @@ function countryClicked(d) {
 		if (selectedCountry != "") {
 			var isLand = !isPeople;
 			updateSankey(lower, upper, exchangeType, selectedCountry, isLand);
-      $("html, body").animate({ scrollTop: $(document).height() }, "slow");
 		}
 	}
 }
 
+/* Helper function to reset zoom */
 function reset() {
 	active.classed("active", false);
 	active = d3.select(null);
@@ -777,23 +783,27 @@ function reset() {
 		  .call( zoom.transform, d3.zoomIdentity );
 }
 
+/* Helper function to zoom in */
 function zoomed() {
 	base_g.style("stroke-width", 1.5 / d3.event.transform.k + "px");
 	base_g.attr("transform", d3.event.transform); 
 }
 
+/* Helper function to stop propagation so we don't click-to-zoom */
 function stopped() {
 	// If the drag behavior prevents the default click,
 	// also stop propagation so we don’t click-to-zoom.
 	if (d3.event.defaultPrevented) d3.event.stopPropagation();
 }
 
+/* TODO: add explanation of this function */
 function clusterTick() {
 	base_g.selectAll(".centroid")
 		  .attr("cx", function(d) { return d.x; })
 		  .attr("cy", function(d) { return d.y; });
 }
 
+/* Helper function to deal with bubble collisions on the map */
 function collide(alpha) {	
 	var quadtree = d3.quadtree()
 					 .x((d) => d.x)
@@ -824,6 +834,7 @@ function collide(alpha) {
 	});
 }
 
+/* Updates the timeline given a new exchange type.  Default is All */
 function updateTimeline(exchangeType) {
 	d3.csv("sankey.csv", 
 		function(d) {
@@ -922,14 +933,15 @@ function updateTimeline(exchangeType) {
 		});
 }
 
+/* Calls updateNewData and updateTimeline if exchange type dropdown selection has changed */
 function onExchangeChange() {
-	// Change values based on exchange type (ex. Annexation)
 	var selected = d3.select(this).property("value");
     exchangeType = selected;
     getNewData(lower, upper, isPeople, exchangeType, gains);
     updateTimeline(exchangeType);
 };
 
+/* Called if timeline brush changes.  Calculates new lower and upper bounds, then updates views */
 function brushed() {
 	// Change values based on timeline
 	var s = d3.event.selection || x.range();
@@ -954,6 +966,7 @@ function brushed() {
 	}
 }
 
+/* Aggregates data from wrangle.csv given current conditions */
 function getNewData(lower_bound, upper_bound, type, exchange, gains) {
 	// Generate new centroid data with updated parameters
 
@@ -1004,6 +1017,7 @@ function getNewData(lower_bound, upper_bound, type, exchange, gains) {
 						});
 }
 
+/* Aggregates data from wrangle.csv given current conditions and sums for net data */
 function getNewNetData(lower_bound, upper_bound, type, exchange) {
 
 	d3.csv("sankey.csv", 
@@ -1079,20 +1093,8 @@ function getNewNetData(lower_bound, upper_bound, type, exchange) {
 			});
 }
 
+/* Filters the data and calls updateBubbles with that data */
 function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gains, isNet) {
-// Complete the update after getting data
-
-	/*
-	// Debugging block
-	if (exchange=="Annexation") {
-		for (i=0; i < inputData.length; i++) {
-			if (inputData[i]["loser"] == "United States of America" && gains) {
-				console.log("UM");
-				console.log(inputData[i]["land"]);
-			}
-		}
-	}
-	*/
 
 	// refresh all chosen variables
 	for (i=0; i < centroidItems.length; i++) {
@@ -1139,8 +1141,9 @@ function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gai
 	updateBubbles(items, type, isNet);
 }
 
+/* Updates map bubbles with newData (already filtered), whether people or land, and whether Net is selected */
 function updateBubbles(newData, type, isNet) {
-// Update bubbles on the map with new data; type = People if true, else Land
+	// Note: type = People if true, else Land
   
 	// put in new data
 	var min = d3.min(newData, function(d) { return type == true ? Math.abs(d.people) : Math.abs(d.land);} );
@@ -1242,6 +1245,7 @@ function updateBubbles(newData, type, isNet) {
 	}
 }
 
+/* Updates view if Land/People button selection changes */
 function updateData(value) {
 	// Update whether Land or People
 	if (value == false) {
@@ -1264,8 +1268,8 @@ function updateData(value) {
 	}
 }
 
+/* Updates view if Gains/Losses/Net button selection changes */
 function updateGains(value) {
-// Update whether Gains or Losses or Net
 
 	if (value == 0) {
 		d3.select("#button3").classed("b_clicked", true);
@@ -1290,7 +1294,8 @@ function updateGains(value) {
 		getNewNetData(lower, upper, isPeople, exchangeType, gains);	
 	}
 }
-  
+
+/* Creates, Removes, or Updates the Sankey diagram based */
 function updateSankey(lower_bound, upper_bound, exchangeType, country, isLand) {
 	sankeyPresent = true;
 
@@ -1488,6 +1493,6 @@ function updateSankey(lower_bound, upper_bound, exchangeType, country, isLand) {
 	});
 }
 
-/* end */
+  /* end */
 
 </script>
