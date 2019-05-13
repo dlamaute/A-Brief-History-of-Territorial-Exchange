@@ -130,15 +130,15 @@ h1 {
   margin-left: 7%;
 }
 
-#yrs{
+.years{
   /* padding-top: 5%; */
-  font-size: 25px;
+  font-size: 20px;
   display: inline-block;
-  margin-left: 18%;
+  margin-left: 25px;
 }
 
 #button-row {
-  margin-left: 5%;
+  /* margin-left: 5%; */
   display: block;
 }
 
@@ -181,7 +181,8 @@ h1 {
 #countries {
   /* padding-top: 2%; */
   display: inline-block;
-  margin-left: 20px;
+  /* margin-left: 20px; */
+  float: right;
 }
 
 #country {
@@ -197,8 +198,8 @@ h1 {
 }
 
 #map {
-  display: inline-block;
-  margin: 50px;
+  /* display: inline-block;
+  margin: 50px; */
 }
 
 #legend {
@@ -226,6 +227,10 @@ h1 {
   margin-right: 5%;
 }
 
+#timelineSvg {
+  margin-left: 25px;
+}
+
 /* .content {
   margin-left: 10%;
 }*/
@@ -237,13 +242,15 @@ h1 {
 </div>
 
 <div id="button-row">
-  <div style="margin-left: 5%; display: inline-block;">[EXPLANATION]</div>
-  <div id="yrs"> - </div>
-  <div id="heading"> Search by Country: </div>
-
-  <div id="countries" style="display:inline-block"></div>
-  <div id="legend"><svg id="my_dataviz" height=500 width=375 style="margin-left: 10%;""></svg></div>
-  <div id="map" style="margin-top: 1%; margin-left: 5%; margin-right: 5%; margin-bottom: 1%"></div>
+  <div style="margin-left: 25px; display: inline-block;">[EXPLANATION]</div>
+  <div id="map-and-legend">
+    <div id="legend" style="display: inline-block;"><svg id="my_dataviz"></svg></div> <!-- style="margin-left: 10%;  -->
+    <div id="map-block" style="display: inline-block;">
+      <div id="yrs1" class="years" style="display: inline-block;"> - </div>
+      <div id="countries" style="display:inline-block">Find a country by name: </div>
+      <div id="map"></div> <!-- style="margin-top: 1%; margin-left: 5%; margin-right: 5%; margin-bottom: 1%;" -->
+    </div>
+  </div>
   <div id="story-buttons" class="btn-group" role="group" aria-label="people" style="margin-left: 18%;">
     <button type="button" id="button1" class="btn btn-default" onClick="updateData(false);">Land</button>
     <button type="button" id="button2" class="btn btn-default" onClick="updateData(true);">People</button>
@@ -254,8 +261,9 @@ h1 {
     <button type="button" id="button5" class="btn btn-default" onClick="updateGains(2);">Net</button>
   </div>
   <div class="right-buttons" id="exchanges"></div>
-  <svg width="960" height="100" font-family="sans-serif" font-size="10" text-anchor="middle" id="timelineSvg" style="margin-left:18%"></svg>
-  <div class="sankey" id="chart" style="margin-left: 14%"></div>
+  <div id="yrs2" class="years"> - </div>
+  <svg width="960" height="100" font-family="sans-serif" font-size="10" text-anchor="middle" id="timelineSvg"></svg> <!-- style="margin-left:18%" -->
+  <div class="sankey" id="chart"></div> <!-- style="margin-left: 14%" -->
 </div>
 
 </body>
@@ -277,45 +285,50 @@ var sankeyPresent = false;			// Is a Sankey diagram on the display
 
 /* For the Legend */
 var legend = d3.select("#my_dataviz")
+  .attr("width", "325px")
+  .attr("height", "500px")
+  .style("margin-left", "20px")
+  .style("float", "left")
+  .style("border", "1px solid #ccc");
 
 // Legend
 legend.append("text").attr("x", 110).attr("y", 50).text("Legend").attr("font-family", "sans-serif").style("font-size", "25px")
 
 // Size Labels
-legend.append("text").attr("x", 30).attr("y", 100).text("Land").attr("font-family", "sans-serif").style("font-size", "20px")
+legend.append("text").attr("x", 30).attr("y", 100).text("Land (km^2)").attr("font-family", "sans-serif").style("font-size", "20px")
 legend.append("text").attr("x", 190).attr("y", 100).text("People").attr("font-family", "sans-serif").style("font-size", "20px")
 
 // Labels -> Binning Scales by Land
 legend.append("circle").attr("cx",25).attr("cy",125).attr("r", 4).style("fill", "gray")
-legend.append("text").attr("x", 40).attr("y", 130).text("0-100").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("text").attr("x", 40).attr("y", 130).text("0-100").style("font-size", "10px").attr("alignment-baseline","middle")
 legend.append("circle").attr("cx",25).attr("cy",145).attr("r", 6).style("fill", "gray")
-legend.append("text").attr("x", 40).attr("y", 150).text("101-1000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("text").attr("x", 40).attr("y", 150).text("101-1000").style("font-size", "10px").attr("alignment-baseline","middle")
 legend.append("circle").attr("cx",25).attr("cy",165).attr("r", 8).style("fill", "gray")
-legend.append("text").attr("x", 40).attr("y", 170).text("1001-10,000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("text").attr("x", 40).attr("y", 170).text("1001-10,000").style("font-size", "10px").attr("alignment-baseline","middle")
 legend.append("circle").attr("cx",25).attr("cy",185).attr("r", 10).style("fill", "gray")
-legend.append("text").attr("x", 40).attr("y", 190).text("10,001-100,000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("text").attr("x", 40).attr("y", 190).text("10,001-100,000").style("font-size", "10px").attr("alignment-baseline","middle")
 legend.append("circle").attr("cx",25).attr("cy",210).attr("r", 12).style("fill", "gray")
-legend.append("text").attr("x", 40).attr("y", 215).text("100,001-1,000,000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("text").attr("x", 40).attr("y", 215).text("100,001-1,000,000").style("font-size", "10px").attr("alignment-baseline","middle")
 legend.append("circle").attr("cx",25).attr("cy",245).attr("r", 14).style("fill", "gray")
-legend.append("text").attr("x", 45).attr("y", 245).text(">1,000,000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("text").attr("x", 45).attr("y", 245).text(">1,000,000").style("font-size", "10px").attr("alignment-baseline","middle")
 
 // Labels -> Binning Scales by People
 legend.append("circle").attr("cx",195).attr("cy",125).attr("r", 4).style("fill", "gray")
-legend.append("text").attr("x", 210).attr("y", 130).text("0-1000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("text").attr("x", 210).attr("y", 130).text("0-1000").style("font-size", "10px").attr("alignment-baseline","middle")
 legend.append("circle").attr("cx",195).attr("cy",145).attr("r", 6).style("fill", "gray")
-legend.append("text").attr("x", 210).attr("y", 150).text("1001-10,000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("text").attr("x", 210).attr("y", 150).text("1001-10,000").style("font-size", "10px").attr("alignment-baseline","middle")
 legend.append("circle").attr("cx",195).attr("cy",165).attr("r", 8).style("fill", "gray")
-legend.append("text").attr("x", 210).attr("y", 170).text("10,001-100,000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("text").attr("x", 210).attr("y", 170).text("10,001-100,000").style("font-size", "10px").attr("alignment-baseline","middle")
 legend.append("circle").attr("cx",195).attr("cy",185).attr("r", 10).style("fill", "gray")
-legend.append("text").attr("x", 210).attr("y", 190).text("100,001-1,000,000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("text").attr("x", 210).attr("y", 190).text("100,001-1,000,000").style("font-size", "10px").attr("alignment-baseline","middle")
 legend.append("circle").attr("cx",195).attr("cy",210).attr("r", 12).style("fill", "gray")
-legend.append("text").attr("x", 210).attr("y", 215).text("1,000,001-10,000,000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("text").attr("x", 210).attr("y", 215).text("1,000,001-10,000,000").style("font-size", "10px").attr("alignment-baseline","middle")
 legend.append("circle").attr("cx",195).attr("cy",245).attr("r", 14).style("fill", "gray")
-legend.append("text").attr("x", 215).attr("y", 245).text(">10,000,000").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("text").attr("x", 215).attr("y", 245).text(">10,000,000").style("font-size", "10px").attr("alignment-baseline","middle")
 
 
 // Continents Label
-legend.append("text").attr("x", 75).attr("y", 295).text("Clusters by Stroke").attr("font-family", "sans-serif").style("font-size", "20px")
+legend.append("text").attr("x", 125).attr("y", 295).text("Clusters").attr("font-family", "sans-serif").style("font-size", "20px")
 
 // Labels -> Continent Strokes
 legend.append("circle").attr("cx",45).attr("cy", 325).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#ffff00").attr("stroke-width", 4)
@@ -334,7 +347,7 @@ legend.append("text").attr("x", 200).attr("y", 385).text("Oceania").style("font-
 
 
 // Net/Gain Label
-legend.append("text").attr("x", 100).attr("y", 435).text("Net Colors").attr("font-family", "sans-serif").style("font-size", "20px")
+legend.append("text").attr("x", 100).attr("y", 435).text("Acquisition").attr("font-family", "sans-serif").style("font-size", "20px")
 
 // Labels -> Gain/Loss Colors
 legend.append("circle").attr("cx",45).attr("cy",465).attr("r", 12).style("fill", "lightblue")
@@ -363,7 +376,8 @@ updateYearsBanner(lower, upper);
 /* End Timeline initialization section */
 
 var body = d3.select("body");
-body.attr("width", (width + 100).toString() + "px").attr("height", (height + 50).toString() + "px");
+/* body.attr("width", (width + 100).toString() + "px").attr("height", (height + 50).toString() + "px"); */
+body.attr("width", (width + 1000).toString() + "px").attr("height", (height + 50).toString() + "px");
 
 /* For the Sankey */
 var marginSan = {top: 10, right: 10, bottom: 10, left: 68},
@@ -372,12 +386,21 @@ var marginSan = {top: 10, right: 10, bottom: 10, left: 68},
 /* End Sankey initialization section */
 
 /* For the Map */
-var mapWidth = 960,
+var mapWidth = 900,
     mapHeight = 500,
     nodePadding = 20, 			// distance between same-color nodes
     clusterPadding = 25, 		// distance between different-color nodes
     maxRadius = mapHeight*0.1, 	// should this vary with the current node options?
     active = d3.select(null);
+
+d3.select("#map-and-legend")
+  .attr("width", (width+2000).toString() + "px")
+  .style("margin-top", "25px");
+
+d3.select("#map-block")
+  .attr("width", mapWidth)
+  .style("margin-left", "25px")
+  .style("float", "left");
 
 var projection = d3.geoMercator()
 				   .scale(150)
@@ -505,6 +528,7 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
 
   var countrySelect = d3.select("#countries")
         .append("div")
+        .attr("style", "display: inline-block; margin-bottom: 5px;")
         .append("select")
         .on('change', countryChange)
         .attr("class", "custom-select")
@@ -965,10 +989,12 @@ function startUncluster(clusteredCentroids, continent_gs) {
   clustered = false;
 }
 
-/* Updates displayed year values */
+/* Updates displayed year values */ // TODO change to accommodate 2 years banners?
 function updateYearsBanner(lower, upper) {
-	var select = d3.select("#yrs")
-				   .text("Number of Exchanges: " + lower + " - " + upper);
+	d3.select("#yrs1")
+		.text("Amount of Exchange: " + lower + " - " + upper);
+  d3.select("#yrs2")
+    .text("Number of Exchanges: " + lower + " - " + upper)
 }
 
 /* Zooms in to a continent if the countinent is clicked */
