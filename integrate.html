@@ -240,7 +240,7 @@ h1 {
   <div id="yrs"> - </div>
   <div id="heading"> Search by Country: </div>
   <div id="countries"></div>
-  <div style="margin-left: 10%">Amount of Exchange (Explanation)</div>
+  <div style="margin-left: 10%">Use the views, filters, and timeline below to narrow your search. Select a country to explore further!</div>
   <div id="map" style="margin-top: 1%; margin-left: 5%; margin-right: 2%; margin-bottom: 1%"></div>
   <div id="legend"><svg id="my_dataviz" height=500 width=375></svg></div>
   <div id="story-buttons" class="btn-group" role="group" aria-label="people" style="margin-left: 15%;">
@@ -1468,10 +1468,6 @@ function updateBubbles(newData, type, isNet) {
       }
       populationLine += pop.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
       landLine += land.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " km^2";
-      // TEST
-      populationLine += " " + d.x;
-      landLine += " " + d.y;
-      // END TEST
       text = d.name + populationLine + landLine;
     tooltipDiv.transition()    
         .duration(200)    
