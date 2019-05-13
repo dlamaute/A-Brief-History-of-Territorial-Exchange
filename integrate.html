@@ -237,7 +237,7 @@ h1 {
 }
 
 #instr {
-  font-size: 18px;
+  font-size: 16px;
   margin-left: 3%;
   display: inline-block;
   margin-top: 1%;
@@ -633,9 +633,6 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
   // set up countries
   countriesData.filter(function(d) {
   	return names.some(function(n) {
-      /* if (!d_ids.has(parseInt(n.id))) {
-        missing_ids.push(n.id);
-      } */
       x = path.centroid(d)[0];
       y = path.centroid(d)[1];
 
@@ -657,12 +654,6 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
                 d.land = 0; 
                 d.people = 0;
               }
-
-              /* if (!n_a3s.has(e.c_a3_g)) {
-                missing_a3s_n[e.c_a3_g] = e.gainer;
-              } else if (!n_a3s.has(e.c_a3_l)) {
-                missing_a3s_n[e.c_a3_l] = e.loser;
-              } */
           });
 
     			if (n.region != "Americas") {
@@ -700,21 +691,8 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
           }
     		}
       }
-      /* else {
-        console.log(n.id);
-      } */
   	});
 	});
-
-  //console.log(countriesData.length);
-  //console.log(names.length);
-  //var missing_set = new Set(missing_ids);
-  //console.log(missing_set);
-  /* var missing_a3s_set = new Set(missing_a3s);
-  console.log(missing_a3s_set)
-  //var missing_a3s_set_2 = new Set(missing_a3s_n);
-  console.log(missing_a3s_n);
-  print(missing_a3s_n); */
 
   centroidItems = countriesData.map(function(feature) {
     var centroidItem = {
