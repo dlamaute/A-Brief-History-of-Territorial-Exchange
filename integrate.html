@@ -773,7 +773,7 @@ function startCluster(data) {
     declumpSimulation = d3.forceSimulation()
       .nodes(data)
       .alpha(1)
-      .alphaMin(0.5)
+      .alphaMin(0.2)
       .force('repel', d3.forceManyBody()
         .strength(-3))
       .force('collide', function(alpha) {
@@ -790,7 +790,7 @@ function startCluster(data) {
         .alpha(1)
         .alphaMin(0.1)
         .force("x", d3.forceX()
-          .strength(0.021)
+          .strength(0.022)
           .x(function(d) {
             if(d.region) {
               var cluster = continentCentroids[d.region];
@@ -801,7 +801,7 @@ function startCluster(data) {
           })
         )
         .force("y", d3.forceY()
-          .strength(0.021)
+          .strength(0.022)
           .y(function(d) {
             if(d.region) {
               var cluster = continentCentroids[d.region];
@@ -834,7 +834,7 @@ function startGroupCluster(data) {
     .alphaMin(0.1)
     .force('attract', d3.forceAttract()
       .target([mapWidth/2,mapHeight/2])
-      .strength(-.0001*data.length + 0.03)// -.00013158*data.length + 0.05132) // needs more force when there are fewer points
+      .strength(-.0001*data.length + 0.032)// -.00013158*data.length + 0.05132) // needs more force when there are fewer points
     )
     .force('collide', function(alpha) {
       return collide(alpha, data)
@@ -1364,6 +1364,8 @@ function updateBubbles(newData, type, isNet) {
     .attr("stroke-width", "2")
     .on("click", countryClicked)
     .on("mouseover", function(d) {
+      pop = d.people;
+      land = d.land;
       populationLine = "<br> Population ";
           landLine = "<br> Land ";
           if ( (!isNet && gains == 1) || (isNet && type && d.peopleLoss) || (isNet && !type && d.landLoss) ) {
@@ -1373,8 +1375,8 @@ function updateBubbles(newData, type, isNet) {
             populationLine += "Gained: ";
             landLine += "Gained: ";
           }
-          populationLine += d.people;
-          landLine += d.land + " km^2";
+          populationLine += pop.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+          landLine += land.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " km^2";
           text = d.name + populationLine + landLine;
         tooltipDiv.transition()    
             .duration(200)    
