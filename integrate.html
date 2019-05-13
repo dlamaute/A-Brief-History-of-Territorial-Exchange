@@ -515,6 +515,19 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
 			cluster: continentClusterCodes[feature.region],
 			region: feature.region
 		};
+		
+		if (feature.name == "United States of America") {
+			centroidItem.origX += 65;
+		}
+		
+		if (feature.name == "United States of America") {
+			centroidItem.origY += 45;
+		}
+		
+		if (feature.name == "Canada") {
+			centroidItem.origY += 65;
+		}
+		
 		return centroidItem;
 	});
 
@@ -528,18 +541,9 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
 									.attr("fill", function(d) { return "#a0a0f0"; })  // switch for gain/loss color
 									.attr("r", function(d) { return d.radius; })
 									.attr("cx", function(d) { 
-												if (d.name == "United States of America") {
-													return d.origY + 45;
-												}
 												return d.x; 
 											})
 									.attr("cy", function(d) {
-												if (d.name == "United States of America") {
-													return d.origY + 45;
-												}
-												if (d.name == "Canada") {
-													return d.origY + 75;
-												}
 												return d.y; 
 											})
 									.attr("stroke", function(d) { return d.color; })
@@ -712,18 +716,9 @@ function startUncluster(clusteredCentroids, continent_gs) {
     clusteredCentroids.transition()
 					  .duration(500)
 					  .attr("cx", function(d) { 
-							if (d.name == "United States of America") {
-								return d.origX + 65 ;
-							}
 							return d.origX; 
 						})
 					  .attr("cy", function(d) { 
-							if (d.name == "United States of America") {
-								return d.origY + 45;
-							}
-							if (d.name == "Canada") {
-								return d.origY + 65;
-							}
 							return d.origY; 
 						});
 
@@ -1240,19 +1235,10 @@ function updateBubbles(newData, type, isNet) {
 						})
 						.attr("cx", function(d) { 
 							d.x = d.origX; // reset initial x-coordinate
-							if (d.name == "United States of America") {
-								return d.origX + 65 ;
-							}
 							return d.origX;
 						})
 						.attr("cy", function(d) { 
 							d.y = d.origY; // reset initial y-coordinate
-							if (d.name == "United States of America") {
-								return d.origY + 45;
-							}
-							if (d.name == "Canada") {
-								return d.origY + 65;
-							}
 							return d.origY;
 						})
 						.attr("stroke", function(d) { return d.color; })
