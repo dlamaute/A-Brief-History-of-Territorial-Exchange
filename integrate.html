@@ -236,6 +236,13 @@ h1 {
   margin-left: 25px;
 }
 
+#instr {
+  font-size: 18px;
+  margin-left: 3%;
+  display: inline-block;
+  margin-top: 1%;
+}
+
 /* .content {
   margin-left: 10%;
 }*/
@@ -247,12 +254,12 @@ h1 {
 </div>
 
 <div id="button-row">
-  <div style="margin-left: 25px; display: inline-block;">[EXPLANATION]</div>
+  <div id="instr">Use the buttons and timeline brush below to narrow your search. Select a country to explore further!</div>
   <div id="map-and-legend">
     <div id="legend" style="display: inline-block;"><svg id="my_dataviz"></svg></div> <!-- style="margin-left: 10%;  -->
     <div id="map-block" style="display: inline-block;">
       <div id="yrs1" class="years" style="display: inline-block;"> - </div>
-      <div id="countries" style="display:inline-block">Find a country by name: </div>
+      <div id="countries" style="display:inline-block; font-size: 15px">Find a country by name: </div>
       <div id="map"></div> <!-- style="margin-top: 1%; margin-left: 5%; margin-right: 5%; margin-bottom: 1%;" -->
     </div>
   </div>
@@ -724,6 +731,11 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
       cluster: continentClusterCodes[feature.region],
       region: feature.region
     };
+
+    if (feature.name == "Kiribati") {
+      centroidItem.origX -= 300;
+      centroidItem.origY += 10;
+    }
 
     if (feature.name == "United States of America") {
       centroidItem.origX += 65;
