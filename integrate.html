@@ -888,9 +888,16 @@ function startCluster(data) {
         .strength(-3)
         // .theta(1)
       )
-      .force('collide', function(alpha) {
+      /* .force('collide', function(alpha) {
         return collide(data);
-      })
+      }) */
+      .force("collide", d3.forceCollide()
+        .radius(function(d) {
+          return 14;
+          // return d.radius == 0 ? 15 : d.radius + d.radius/3;
+        })
+        .strength(1)
+        .iterations(5))
       .restart()
       .on('tick', clusterTick)
       .on("end", initialCluster);
@@ -922,9 +929,16 @@ function startCluster(data) {
             }
           })
         )
-        .force('collide', function(alpha) {
+        /* .force('collide', function(alpha) {
           return collide(data)
+        }) */
+        .force("collide", d3.forceCollide()
+          .radius(function(d) {
+            return 14;
+          //return d.radius == 0 ? 15 : d.radius + d.radius/3;
         })
+          .strength(1)
+          .iterations(5))
         .restart()
         .on('tick', clusterTick)
         .on("end", function(d) {
@@ -947,9 +961,16 @@ function startGroupCluster(data) {
     .force('attract', d3.forceAttract()
       .target([mapWidth/2,mapHeight/2])
       .strength(-.0001*data.length + 0.04))
-    .force('collide', function(alpha) {
+    /* .force('collide', function(alpha) {
       return collide(data)
-    })
+    }) */
+    .force("collide", d3.forceCollide()
+      .radius(function(d) {
+          return 14;
+          //return d.radius == 0 ? 15 : d.radius + d.radius/3;
+        })
+      .strength(1)
+      .iterations(8))
     .restart()
     .on("tick", clusterTick)
     .on("end", function(d) {
