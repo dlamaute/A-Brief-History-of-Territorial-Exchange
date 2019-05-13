@@ -952,13 +952,8 @@ function countryClicked(d) {
     });
     if (selectedCountry != "") {
       var isLand = !isPeople;
-      // trying to make map click link to drop down
       d3.select("#country")
-        .property("value", "bob"); /*function(d) {
-          // console.log(d);
-          return "bob";
-        }) */
-        //.attr("value", selectedCountry);
+        .property("value", selectedCountry);
       updateSankey(lower, upper, exchangeType, selectedCountry, isLand);
     }
     
