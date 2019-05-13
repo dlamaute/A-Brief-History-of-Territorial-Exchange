@@ -298,70 +298,70 @@ var legend = d3.select("#my_dataviz")
   .style("border", "1px solid #ccc");
 
 // Legend
-legend.append("text").attr("x", 110).attr("y", 50).text("Legend").attr("font-family", "sans-serif").style("font-size", "25px")
+legend.append("text").attr("x", 110).attr("y", 25).text("Legend").attr("font-family", "sans-serif").style("font-size", "25px")
 
 // Size Labels
-legend.append("text").attr("x", 30).attr("y", 100).text("Land (km^2)").attr("font-family", "sans-serif").style("font-size", "20px")
-legend.append("text").attr("x", 190).attr("y", 100).text("People").attr("font-family", "sans-serif").style("font-size", "20px")
+legend.append("text").attr("x", 30).attr("y", 75).text("Land (km^2)").attr("font-family", "sans-serif").style("font-size", "20px")
+legend.append("text").attr("x", 190).attr("y", 75).text("People").attr("font-family", "sans-serif").style("font-size", "20px")
 
 // Labels -> Binning Scales by Land
-legend.append("circle").attr("cx",25).attr("cy",125).attr("r", 4).style("fill", "gray")
-legend.append("text").attr("x", 40).attr("y", 130).text("0-100").style("font-size", "10px").attr("alignment-baseline","middle")
-legend.append("circle").attr("cx",25).attr("cy",145).attr("r", 6).style("fill", "gray")
-legend.append("text").attr("x", 40).attr("y", 150).text("101-1000").style("font-size", "10px").attr("alignment-baseline","middle")
-legend.append("circle").attr("cx",25).attr("cy",165).attr("r", 8).style("fill", "gray")
-legend.append("text").attr("x", 40).attr("y", 170).text("1001-10,000").style("font-size", "10px").attr("alignment-baseline","middle")
-legend.append("circle").attr("cx",25).attr("cy",185).attr("r", 10).style("fill", "gray")
-legend.append("text").attr("x", 40).attr("y", 190).text("10,001-100,000").style("font-size", "10px").attr("alignment-baseline","middle")
-legend.append("circle").attr("cx",25).attr("cy",210).attr("r", 12).style("fill", "gray")
-legend.append("text").attr("x", 40).attr("y", 215).text("100,001-1,000,000").style("font-size", "10px").attr("alignment-baseline","middle")
-legend.append("circle").attr("cx",25).attr("cy",245).attr("r", 14).style("fill", "gray")
-legend.append("text").attr("x", 45).attr("y", 245).text(">1,000,000").style("font-size", "10px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",25).attr("cy",100).attr("r", 4).style("fill", "gray")
+legend.append("text").attr("x", 40).attr("y", 105).text("0-100").style("font-size", "10px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",25).attr("cy",120).attr("r", 6).style("fill", "gray")
+legend.append("text").attr("x", 40).attr("y", 125).text("101-1000").style("font-size", "10px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",25).attr("cy",140).attr("r", 8).style("fill", "gray")
+legend.append("text").attr("x", 40).attr("y", 145).text("1001-10,000").style("font-size", "10px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",25).attr("cy",160).attr("r", 10).style("fill", "gray")
+legend.append("text").attr("x", 40).attr("y", 165).text("10,001-100,000").style("font-size", "10px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",25).attr("cy",185).attr("r", 12).style("fill", "gray")
+legend.append("text").attr("x", 40).attr("y", 190).text("100,001-1,000,000").style("font-size", "10px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",25).attr("cy",220).attr("r", 14).style("fill", "gray")
+legend.append("text").attr("x", 45).attr("y", 220).text(">1,000,000").style("font-size", "10px").attr("alignment-baseline","middle")
 
 // Labels -> Binning Scales by People
-legend.append("circle").attr("cx",195).attr("cy",125).attr("r", 4).style("fill", "gray")
-legend.append("text").attr("x", 210).attr("y", 130).text("0-1000").style("font-size", "10px").attr("alignment-baseline","middle")
-legend.append("circle").attr("cx",195).attr("cy",145).attr("r", 6).style("fill", "gray")
-legend.append("text").attr("x", 210).attr("y", 150).text("1001-10,000").style("font-size", "10px").attr("alignment-baseline","middle")
-legend.append("circle").attr("cx",195).attr("cy",165).attr("r", 8).style("fill", "gray")
-legend.append("text").attr("x", 210).attr("y", 170).text("10,001-100,000").style("font-size", "10px").attr("alignment-baseline","middle")
-legend.append("circle").attr("cx",195).attr("cy",185).attr("r", 10).style("fill", "gray")
-legend.append("text").attr("x", 210).attr("y", 190).text("100,001-1,000,000").style("font-size", "10px").attr("alignment-baseline","middle")
-legend.append("circle").attr("cx",195).attr("cy",210).attr("r", 12).style("fill", "gray")
-legend.append("text").attr("x", 210).attr("y", 215).text("1,000,001-10,000,000").style("font-size", "10px").attr("alignment-baseline","middle")
-legend.append("circle").attr("cx",195).attr("cy",245).attr("r", 14).style("fill", "gray")
-legend.append("text").attr("x", 215).attr("y", 245).text(">10,000,000").style("font-size", "10px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",195).attr("cy",100).attr("r", 4).style("fill", "gray")
+legend.append("text").attr("x", 210).attr("y", 105).text("0-1000").style("font-size", "10px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",195).attr("cy",120).attr("r", 6).style("fill", "gray")
+legend.append("text").attr("x", 210).attr("y", 125).text("1001-10,000").style("font-size", "10px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",195).attr("cy",140).attr("r", 8).style("fill", "gray")
+legend.append("text").attr("x", 210).attr("y", 145).text("10,001-100,000").style("font-size", "10px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",195).attr("cy",160).attr("r", 10).style("fill", "gray")
+legend.append("text").attr("x", 210).attr("y", 165).text("100,001-1,000,000").style("font-size", "10px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",195).attr("cy",185).attr("r", 12).style("fill", "gray")
+legend.append("text").attr("x", 210).attr("y", 190).text("1,000,001-10,000,000").style("font-size", "10px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",195).attr("cy",220).attr("r", 14).style("fill", "gray")
+legend.append("text").attr("x", 215).attr("y", 220).text(">10,000,000").style("font-size", "10px").attr("alignment-baseline","middle")
 
 
 // Continents Label
-legend.append("text").attr("x", 125).attr("y", 295).text("Clusters").attr("font-family", "sans-serif").style("font-size", "20px")
+legend.append("text").attr("x", 125).attr("y", 270).text("Clusters").attr("font-family", "sans-serif").style("font-size", "20px")
 
 // Labels -> Continent Strokes
-legend.append("circle").attr("cx",45).attr("cy", 325).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#ffff00").attr("stroke-width", 4)
-legend.append("text").attr("x", 70).attr("y", 325).text("Africa").style("font-size", "15px").attr("alignment-baseline","middle")
-legend.append("circle").attr("cx",45).attr("cy", 355).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#00ffff").attr("stroke-width", 4)
-legend.append("text").attr("x", 70).attr("y", 355).text("Asia").style("font-size", "15px").attr("alignment-baseline","middle")
-legend.append("circle").attr("cx",45).attr("cy", 385).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#00ff00").attr("stroke-width", 4)
-legend.append("text").attr("x", 70).attr("y", 385).text("Europe").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",45).attr("cy", 300).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#ffff00").attr("stroke-width", 4)
+legend.append("text").attr("x", 70).attr("y", 300).text("Africa").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",45).attr("cy", 330).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#00ffff").attr("stroke-width", 4)
+legend.append("text").attr("x", 70).attr("y", 330).text("Asia").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",45).attr("cy", 360).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#00ff00").attr("stroke-width", 4)
+legend.append("text").attr("x", 70).attr("y", 360).text("Europe").style("font-size", "15px").attr("alignment-baseline","middle")
 
-legend.append("circle").attr("cx",175).attr("cy", 325).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#0000ff").attr("stroke-width", 4)
-legend.append("text").attr("x", 200).attr("y", 325).text("North America").style("font-size", "15px").attr("alignment-baseline","middle")
-legend.append("circle").attr("cx",175).attr("cy", 355).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#007700").attr("stroke-width", 4)
-legend.append("text").attr("x", 200).attr("y", 355).text("South America").style("font-size", "15px").attr("alignment-baseline","middle")
-legend.append("circle").attr("cx",175).attr("cy", 385).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#ff00ff").attr("stroke-width", 4)
-legend.append("text").attr("x", 200).attr("y", 385).text("Oceania").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",175).attr("cy", 300).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#0000ff").attr("stroke-width", 4)
+legend.append("text").attr("x", 200).attr("y", 300).text("North America").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",175).attr("cy", 330).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#007700").attr("stroke-width", 4)
+legend.append("text").attr("x", 200).attr("y", 330).text("South America").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",175).attr("cy", 360).attr("r", 12).style("fill", "lightslategray").attr("stroke", "#ff00ff").attr("stroke-width", 4)
+legend.append("text").attr("x", 200).attr("y", 360).text("Oceania").style("font-size", "15px").attr("alignment-baseline","middle")
 
 
 // Net/Gain Label
-legend.append("text").attr("x", 100).attr("y", 435).text("Acquisition").attr("font-family", "sans-serif").style("font-size", "20px")
+legend.append("text").attr("x", 100).attr("y", 410).text("Acquisition").attr("font-family", "sans-serif").style("font-size", "20px")
 
 // Labels -> Gain/Loss Colors
-legend.append("circle").attr("cx",45).attr("cy",465).attr("r", 12).style("fill", "lightblue")
-legend.append("text").attr("x", 70).attr("y", 465).text("Gain").style("font-size", "15px").attr("alignment-baseline","middle")
-legend.append("circle").attr("cx",175).attr("cy",465).attr("r", 12).style("fill", "lightcoral")
-legend.append("text").attr("x", 200).attr("y", 465).text("Loss").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",45).attr("cy",440).attr("r", 12).style("fill", "lightblue")
+legend.append("text").attr("x", 70).attr("y", 440).text("Gain").style("font-size", "15px").attr("alignment-baseline","middle")
+legend.append("circle").attr("cx",175).attr("cy",440).attr("r", 12).style("fill", "lightcoral")
+legend.append("text").attr("x", 200).attr("y", 440).text("Loss").style("font-size", "15px").attr("alignment-baseline","middle")
 
-legend.append("text").attr("x", 100).attr("y", 515).text("Use the mouse to scroll and pan").attr("font-family", "sans-serif").style("font-size", "14px")
+legend.append("text").attr("x", 55).attr("y", 490).text("Use the mouse to pan and zoom.").attr("font-family", "sans-serif").style("font-size", "14px")
 
 
 /* End Legend Initialization Section */
@@ -510,7 +510,7 @@ mapSvg.call(zoom);
 
 mapSvg.transition()
       .duration(750)
-      .call( zoom.transform, d3.zoomIdentity.translate(0,0).scale(.9));
+      .call( zoom.transform, d3.zoomIdentity.translate(0,0).scale(.5));
 /* End map initialization section */
 
 // Helper Function
