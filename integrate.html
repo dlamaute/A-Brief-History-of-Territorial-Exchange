@@ -1367,24 +1367,24 @@ function updateBubbles(newData, type, isNet) {
       pop = d.people;
       land = d.land;
       populationLine = "<br> Population ";
-          landLine = "<br> Land ";
-          if ( (!isNet && gains == 1) || (isNet && type && d.peopleLoss) || (isNet && !type && d.landLoss) ) {
-            populationLine += "Lost: ";
-            landLine += "Lost: ";
-          } else {
-            populationLine += "Gained: ";
-            landLine += "Gained: ";
-          }
-          populationLine += pop.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-          landLine += land.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " km^2";
-          text = d.name + populationLine + landLine;
-        tooltipDiv.transition()    
-            .duration(200)    
-            .style("opacity", 1);    
-        tooltipDiv.html(text)  
-            .style("left", (d3.event.pageX) + "px")   
-            .style("top", (d3.event.pageY - 28) + "px");  
-        })          
+      landLine = "<br> Land ";
+      if ( (!isNet && gains == 1) || (isNet && type && d.peopleLoss) || (isNet && !type && d.landLoss) ) {
+        populationLine += "Lost: ";
+        landLine += "Lost: ";
+      } else {
+        populationLine += "Gained: ";
+        landLine += "Gained: ";
+      }
+      populationLine += pop.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      landLine += land.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " km^2";
+      text = d.name + populationLine + landLine;
+    tooltipDiv.transition()    
+        .duration(200)    
+        .style("opacity", 1);    
+    tooltipDiv.html(text)  
+        .style("left", (d3.event.pageX) + "px")   
+        .style("top", (d3.event.pageY - 28) + "px");  
+    })          
     .on("mouseout", function(d) {   
         tooltipDiv.transition()    
             .duration(500)    
