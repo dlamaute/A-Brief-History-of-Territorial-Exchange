@@ -298,8 +298,8 @@ var marginSan = {top: 10, right: 10, bottom: 10, left: 68},
 /* For the Map */
 var mapWidth = 960,
     mapHeight = 500,
-    nodePadding = 25, 			// distance between same-color nodes
-    clusterPadding = 30, 		// distance between different-color nodes
+    nodePadding = 20, 			// distance between same-color nodes
+    clusterPadding = 25, 		// distance between different-color nodes
     maxRadius = mapHeight*0.1, 	// should this vary with the current node options?
     active = d3.select(null);
 
@@ -349,19 +349,19 @@ var continentClusterCodes = {
 
 // Binning functions
 function radiusPop(pop) {
-  if (pop < 100) {
+  if (pop < 1000) {
     return 4;
   }
-  else if (pop < 1000) {
+  else if (pop < 10000) {
     return 6;
   }
-  else if (pop < 10000) {
+  else if (pop < 100000) {
     return 8;
   }
-  else if (pop < 100000) {
+  else if (pop < 1000000) {
     return 10;
   }
-  else if (pop < 10000000) {
+  else if (pop < 100000000) {
     return 12;
   }
   else {
@@ -610,7 +610,7 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
 
   var centroids = centroidElements.append("circle")
     .attr("class", "centroid")
-    .attr("fill", function(d) { return "#a0a0f0"; })  // switch for gain/loss color
+    .attr("fill", function(d) { return "lightblue"; })  // switch for gain/loss color
     .attr("r", function(d) { return d.radius; })
     .attr("cx", function(d) { return d.x; })
     .attr("cy", function(d) { return d.y; })
@@ -743,6 +743,7 @@ function startCluster(data) {
     data.forEach(function(d) {
       switch (d.cluster) {
         case 1:  // Africa
+          d.x += 25; 
           d.y += 100;
           break;
         case 2:  // Asia
@@ -769,6 +770,8 @@ function startCluster(data) {
       .nodes(data)
       .alpha(1)
       .alphaMin(0.5)
+      .force('repel', d3.forceManyBody()
+        .strength(-3))
       .force('collide', function(alpha) {
         return collide(alpha, data)
       })
@@ -783,7 +786,7 @@ function startCluster(data) {
         .alpha(1)
         .alphaMin(0.1)
         .force("x", d3.forceX()
-          .strength(0.02)
+          .strength(0.021)
           .x(function(d) {
             if(d.region) {
               var cluster = continentCentroids[d.region];
@@ -794,7 +797,7 @@ function startCluster(data) {
           })
         )
         .force("y", d3.forceY()
-          .strength(0.02)
+          .strength(0.021)
           .y(function(d) {
             if(d.region) {
               var cluster = continentCentroids[d.region];
@@ -817,12 +820,6 @@ function startCluster(data) {
 }
 
   function startGroupCluster(data) {
-    for (d of data) {
-      if (d.name == "Uganda") {
-        console.log(d.radius);
-      }
-    }
-
     d3.selectAll(".feature.continent").transition()    
 									  .duration(500)    
 									  .style("opacity", "0");
@@ -832,7 +829,7 @@ function startCluster(data) {
       .alphaMin(0.1)
       .force('attract', d3.forceAttract()
         .target([mapWidth/2,mapHeight/2])
-        .strength(-.0001*data.length + 0.037)// -.00013158*data.length + 0.05132) // needs more force when there are fewer points
+        .strength(-.0001*data.length + 0.03)// -.00013158*data.length + 0.05132) // needs more force when there are fewer points
       )
       .force('collide', function(alpha) {
         return collide(alpha, data)
@@ -970,6 +967,7 @@ function clusterTick() {
 }
 
 function collide(alpha, data) {	
+  alpha = 1; // fix alpha?
   var quadtree = d3.quadtree()
 		.x((d) => d.x)
     .y((d) => d.y)
