@@ -132,6 +132,7 @@ h1 {
 
 #yrs1{
   /* padding-top: 5%; */
+  margin-top: 15px;
   font-size: 20px;
   display: inline-block;
 }
@@ -182,6 +183,7 @@ h1 {
 #countries {
   /* padding-top: 2%; */
   display: inline-block;
+  margin-top: 15px;
   /* margin-left: 20px; */
 }
 
@@ -403,7 +405,7 @@ var mapWidth = 900,
 
 d3.select("#map-and-legend")
   .attr("width", (width+2000).toString() + "px")
-  .style("margin-top", "25px");
+  .style("margin-top", "10px");
 
 d3.select("#map-block")
   .attr("width", mapWidth)
@@ -420,6 +422,7 @@ var path = d3.geoPath().projection(projection);
 var clustered = false;
 var clusterSimulation = d3.forceSimulation();
 var clusterSimulation2 = d3.forceSimulation();
+var declumpSimulation = d3.forceSimulation();
 var continent_gs;
 var selectedCountry = "";
 
@@ -877,7 +880,7 @@ function startCluster(data) {
       }
     });
 
-    declumpSimulation = d3.forceSimulation()
+    declumpSimulation
       .nodes(data)
       .alpha(1)
       .alphaMin(0.1)
@@ -893,13 +896,12 @@ function startCluster(data) {
       .on("end", initialCluster);
 
     function initialCluster() {
-      console.log("initial cluster start");
       clusterSimulation
         .nodes(data)
         .alpha(1)
         .alphaMin(0.1)
         .force("x", d3.forceX()
-          .strength(.03)//-.0001*data.length + .035)// 0.025)
+          .strength(-.0001*data.length + .035)// 0.025)
           .x(function(d) {
             if(d.region) {
               var cluster = continentCentroids[d.region];
@@ -910,7 +912,7 @@ function startCluster(data) {
           })
         )
         .force("y", d3.forceY()
-          .strength(.03) // -.0001*data.length + .035)//0.025)
+          .strength(-.0001*data.length + .035)//0.025)
           .y(function(d) {
             if(d.region) {
               var cluster = continentCentroids[d.region];
@@ -933,6 +935,7 @@ function startCluster(data) {
 }
 
 /* Updates map to comparision view */
+// -.00013158*data.length + 0.05132) // needs more force when there are fewer points
 function startGroupCluster(data) {
   d3.selectAll(".feature.continent").transition()    
 								  .duration(500)    
@@ -943,8 +946,7 @@ function startGroupCluster(data) {
     .alphaMin(0.08)
     .force('attract', d3.forceAttract()
       .target([mapWidth/2,mapHeight/2])
-      .strength(-.0001*data.length + 0.04)// -.00013158*data.length + 0.05132) // needs more force when there are fewer points
-    )
+      .strength(-.0001*data.length + 0.04))
     .force('collide', function(alpha) {
       return collide(data)
     })
@@ -957,6 +959,7 @@ function startGroupCluster(data) {
   }
 
 function startUncluster(clusteredCentroids, continent_gs) {
+  declumpSimulation.stop();
   clusterSimulation2.stop();
   clusterSimulation.stop();
   top_g.selectAll(".clusterWaitLayer").remove();
