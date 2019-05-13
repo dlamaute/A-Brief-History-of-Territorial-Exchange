@@ -525,9 +525,13 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
             if (n.alpha_3 == e.c_a3_g) {
               d.name = e.gainer;
               d.radius = radiusLand(e.area); // initial is based on land
+              d.land = e.area; 
+              d.people = e.pop;
             } else if (n.alpha_3 == e.c_a3_l) {
               d.name = e.loser;
               d.radius = 0; // only gainers will show initially
+              d.land = 0; 
+              d.people = 0;
             }
 
             /* if (!n_a3s.has(e.c_a3_g)) {
@@ -594,6 +598,8 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
       origX: path.centroid(feature)[0],
       origY: path.centroid(feature)[1],
       radius: feature.radius,
+      people: feature.people,
+      land: feature.land,
       name: feature.name,
       nameCode: feature.nameCode,
       color: feature.color,
@@ -618,14 +624,22 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
     .attr("stroke-width", "2")
     .on("click", countryClicked)
     .on("mouseover", function(d) {
-        text = d.name + "<br> hi";
+        pop = d.people;
+        land = d.land;
+        populationLine = "<br> Population ";
+        landLine = "<br> Land ";
+        populationLine += "Gained: ";
+        landLine += "Gained: ";
+        populationLine += pop.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        landLine += land.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " km^2";
+        text = d.name + populationLine + landLine;
         tooltipDiv.transition()    
             .duration(200)    
             .style("opacity", 1);    
-        tooltipDiv.html(text) 
+        tooltipDiv.html(text)  
             .style("left", (d3.event.pageX) + "px")   
             .style("top", (d3.event.pageY - 28) + "px");  
-        })          
+        })            
     .on("mouseout", function(d) {   
         tooltipDiv.transition()    
             .duration(500)    
@@ -901,6 +915,7 @@ function countryClicked(d) {
     });
     if (selectedCountry != "") {
       var isLand = !isPeople;
+      // trying to make map click link to drop down
       d3.select("#country")
         .property("value", "bob"); /*function(d) {
           // console.log(d);
@@ -940,7 +955,7 @@ function clusterTick() {
 }
 
 function collide(alpha, data) {	
-  alpha = 1; // fix alpha?
+  alpha = 0.6; // fix alpha?
   var quadtree = d3.quadtree()
 		.x((d) => d.x)
     .y((d) => d.y)
@@ -1228,8 +1243,6 @@ function getNewNetData(lower_bound, upper_bound, type, exchange) {
 function completeUpdate(inputData, lower_bound, upper_bound, type, exchange, gains, isNet) {
 // Complete the update after getting data
 
-  centroidItems = d3.selectAll(".centroid").data();
-
 	/*
 	// Debugging block
 	if (exchange=="Annexation") {
@@ -1340,7 +1353,7 @@ function updateBubbles(newData, type, isNet) {
             landLine += "Gained: ";
           }
           populationLine += d.people;
-          landLine += d.land + " [units]";
+          landLine += d.land + " km^2";
           text = d.name + populationLine + landLine;
         tooltipDiv.transition()    
             .duration(200)    
