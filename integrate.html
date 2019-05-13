@@ -130,10 +130,15 @@ h1 {
   margin-left: 7%;
 }
 
-.years{
+#yrs1{
   /* padding-top: 5%; */
   font-size: 20px;
   display: inline-block;
+}
+
+#yrs2{
+  /* padding-top: 5%; */
+  font-size: 20px;
   margin-left: 25px;
 }
 
@@ -891,7 +896,7 @@ function startCluster(data) {
         .theta(1)
       )
       .force('collide', function(alpha) {
-        return collide(alpha, data)
+        return collide(data);
       })
       .restart()
       .on('tick', clusterTick)
@@ -904,7 +909,7 @@ function startCluster(data) {
         .alpha(1)
         .alphaMin(0.1)
         .force("x", d3.forceX()
-          .strength(-.0001*data.length + 0.022)
+          .strength(-.0001*data.length + 0.025)
           .x(function(d) {
             if(d.region) {
               var cluster = continentCentroids[d.region];
@@ -915,7 +920,7 @@ function startCluster(data) {
           })
         )
         .force("y", d3.forceY()
-          .strength(-.0001*data.length + 0.022)
+          .strength(-.0001*data.length + 0.025)
           .y(function(d) {
             if(d.region) {
               var cluster = continentCentroids[d.region];
@@ -926,7 +931,7 @@ function startCluster(data) {
           })
         )
         .force('collide', function(alpha) {
-          return collide(alpha, data)
+          return collide(data)
         })
         .restart()
         .on('tick', clusterTick)
@@ -945,20 +950,17 @@ function startGroupCluster(data) {
   clusterSimulation2
     .nodes(data)
     .alpha(1)
-    .alphaMin(0.1)
+    .alphaMin(0.08)
     .force('attract', d3.forceAttract()
       .target([mapWidth/2,mapHeight/2])
       .strength(-.0001*data.length + 0.03)// -.00013158*data.length + 0.05132) // needs more force when there are fewer points
     )
     .force('collide', function(alpha) {
-      return collide(alpha, data)
+      return collide(data)
     })
     .restart()
     .on("tick", clusterTick)
     .on("end", function(d) {
-      /* mapSvg.transition()
-        .duration(750)
-        .call(zoom.transform, d3.zoomIdentity.translate(-mapWidth/2,-mapHeight/2).scale(2))*/
       top_g.selectAll(".clusterWaitLayer").remove();
       top_g.selectAll(".clusterWaitText").remove();
     });
@@ -1094,7 +1096,7 @@ function clusterTick() {
 		  .attr("cy", function(d) { return d.y; });
 }
 
-function collide(alpha, data) {	
+function collide(data) {	
   alpha = 0.6; // fix alpha?
   var quadtree = d3.quadtree()
 		.x((d) => d.x)
