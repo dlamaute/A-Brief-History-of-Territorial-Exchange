@@ -393,8 +393,8 @@ var marginSan = {top: 10, right: 10, bottom: 10, left: 68},
 /* For the Map */
 var mapWidth = 900,
     mapHeight = 500,
-    nodePadding = 20, 			// distance between same-color nodes
-    clusterPadding = 25, 		// distance between different-color nodes
+    nodePadding = 8, //20, 			// distance between same-color nodes
+    clusterPadding = 10, //25, 		// distance between different-color nodes
     maxRadius = mapHeight*0.1, 	// should this vary with the current node options?
     active = d3.select(null);
 
@@ -893,7 +893,7 @@ function startCluster(data) {
       .alphaMin(0.1)
       .force('repel', d3.forceManyBody()
         .strength(-3)
-        .theta(1)
+        // .theta(1)
       )
       .force('collide', function(alpha) {
         return collide(data);
@@ -909,7 +909,7 @@ function startCluster(data) {
         .alpha(1)
         .alphaMin(0.1)
         .force("x", d3.forceX()
-          .strength(-.0001*data.length + 0.025)
+          .strength(.03)//-.0001*data.length + .035)// 0.025)
           .x(function(d) {
             if(d.region) {
               var cluster = continentCentroids[d.region];
@@ -920,7 +920,7 @@ function startCluster(data) {
           })
         )
         .force("y", d3.forceY()
-          .strength(-.0001*data.length + 0.025)
+          .strength(.03) // -.0001*data.length + .035)//0.025)
           .y(function(d) {
             if(d.region) {
               var cluster = continentCentroids[d.region];
@@ -953,7 +953,7 @@ function startGroupCluster(data) {
     .alphaMin(0.08)
     .force('attract', d3.forceAttract()
       .target([mapWidth/2,mapHeight/2])
-      .strength(-.0001*data.length + 0.03)// -.00013158*data.length + 0.05132) // needs more force when there are fewer points
+      .strength(-.0001*data.length + 0.04)// -.00013158*data.length + 0.05132) // needs more force when there are fewer points
     )
     .force('collide', function(alpha) {
       return collide(data)
@@ -1459,7 +1459,7 @@ function updateBubbles(newData, type, isNet) {
           return "lightblue";
       }
       })
-    .attr("r", function(d) { 
+    .attr("r", function(d) {
       if (type) {
         return radiusPop(d.people);
       } else {
