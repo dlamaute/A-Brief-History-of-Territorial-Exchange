@@ -727,6 +727,11 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
       region: feature.region
     };
 
+    if (feature.name == "Kiribati") {
+      centroidItem.origX -= 300;
+      centroidItem.origY += 10;
+    }
+
     if (feature.name == "United States of America") {
       centroidItem.origX += 65;
     }
