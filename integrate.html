@@ -237,9 +237,6 @@ h1 {
   margin-left: 12%;
 }
 
-/* .content {
-  margin-left: 10%;
-}*/
 </style>
 
 <body>
@@ -363,6 +360,8 @@ legend.append("circle").attr("cx",45).attr("cy",465).attr("r", 12).style("fill",
 legend.append("text").attr("x", 70).attr("y", 465).text("Gain").style("font-size", "15px").attr("alignment-baseline","middle")
 legend.append("circle").attr("cx",175).attr("cy",465).attr("r", 12).style("fill", "lightcoral")
 legend.append("text").attr("x", 200).attr("y", 465).text("Loss").style("font-size", "15px").attr("alignment-baseline","middle")
+
+legend.append("text").attr("x", 100).attr("y", 515).text("Use the mouse to scroll and pan").attr("font-family", "sans-serif").style("font-size", "14px")
 
 
 /* End Legend Initialization Section */
@@ -508,6 +507,10 @@ var centroidItems = [];
 var continentCentroids = {};
   
 mapSvg.call(zoom);
+
+mapSvg.transition()
+      .duration(750)
+      .call( zoom.transform, d3.zoomIdentity.translate(0,0).scale(.9));
 /* End map initialization section */
 
 // Helper Function
