@@ -618,10 +618,11 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
     .attr("stroke-width", "2")
     .on("click", countryClicked)
     .on("mouseover", function(d) {
+        text = d.name + "<br> hi";
         tooltipDiv.transition()    
             .duration(200)    
             .style("opacity", 1);    
-        tooltipDiv.html(d.name + "<br> hi")  
+        tooltipDiv.html(text) 
             .style("left", (d3.event.pageX) + "px")   
             .style("top", (d3.event.pageY - 28) + "px");  
         })          
@@ -1329,10 +1330,20 @@ function updateBubbles(newData, type, isNet) {
     .attr("stroke-width", "2")
     .on("click", countryClicked)
     .on("mouseover", function(d) {
+      populationLine = "<br> Population ";
+          landLine = "<br> Land ";
+          if ( (!isNet && gains == 1) || (isNet && type && d.peopleLoss) || (isNet && !type && d.landLoss) ) {
+            populationLine += "Lost: ";
+            landLine += "Lost: ";
+          } else {
+            populationLine += "Gained: ";
+            landLine += "Gained: ";
+          }
+          text = d.name + populationLine + landLine;
         tooltipDiv.transition()    
             .duration(200)    
             .style("opacity", 1);    
-        tooltipDiv.html(d.name)  
+        tooltipDiv.html(text)  
             .style("left", (d3.event.pageX) + "px")   
             .style("top", (d3.event.pageY - 28) + "px");  
         })          
