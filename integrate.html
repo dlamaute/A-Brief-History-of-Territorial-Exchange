@@ -1339,6 +1339,8 @@ function updateBubbles(newData, type, isNet) {
             populationLine += "Gained: ";
             landLine += "Gained: ";
           }
+          populationLine += d.people;
+          landLine += d.land + " [units]";
           text = d.name + populationLine + landLine;
         tooltipDiv.transition()    
             .duration(200)    
