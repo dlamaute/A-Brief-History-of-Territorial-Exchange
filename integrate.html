@@ -586,7 +586,6 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
   var e_a3s_g = new Set(exchangeDataCopy.map(function(e) { return e.c_a3_g; }))
   var e_a3s_l = new Set(exchangeDataCopy.map(function(e) { return e.c_a3_l; }))
 
-<<<<<<< HEAD
   var e_a3s = union(e_a3s_g, e_a3s_l);
   var missing_a3s = [];
   
@@ -600,64 +599,70 @@ function setup(error, worldContinents, worldCountries, names, exchangeData) {
       /* if (!d_ids.has(parseInt(n.id))) {
         missing_ids.push(n.id);
       } */
-  		if (parseInt(d.id) == parseInt(n.id)) {
-  			d.nameCode = n.alpha_3;
-        d.name = n.name;
+      x = path.centroid(d)[0];
+      y = path.centroid(d)[1];
 
-        exchangeData.some(function(e) {
-            if (n.alpha_3 == e.c_a3_g) {
-              d.name = e.gainer;
-              d.radius = radiusLand(e.area); // initial is based on land
-              d.land = e.area; 
-              d.people = e.pop;
-            } else if (n.alpha_3 == e.c_a3_l) {
-              d.name = e.loser;
-              d.radius = 0; // only gainers will show initially
-              d.land = 0; 
-              d.people = 0;
-            }
+      // This first conditional is to get rid of the second Australia
+      if (parseInt(x) != 803 && parseInt(y) != 282) {
+    		if (parseInt(d.id) == parseInt(n.id)) {
+    			d.nameCode = n.alpha_3;
+          d.name = n.name;
 
-            /* if (!n_a3s.has(e.c_a3_g)) {
-              missing_a3s_n[e.c_a3_g] = e.gainer;
-            } else if (!n_a3s.has(e.c_a3_l)) {
-              missing_a3s_n[e.c_a3_l] = e.loser;
-            } */
-        });
+          exchangeData.some(function(e) {
+              if (n.alpha_3 == e.c_a3_g) {
+                d.name = e.gainer;
+                d.radius = radiusLand(e.area); // initial is based on land
+                d.land = e.area; 
+                d.people = e.pop;
+              } else if (n.alpha_3 == e.c_a3_l) {
+                d.name = e.loser;
+                d.radius = 0; // only gainers will show initially
+                d.land = 0; 
+                d.people = 0;
+              }
 
-  			if (n.region != "Americas") {
-  				d.region = n.region;
-  			} else if (n.subregion == "South America") { 
-  				d.region = n.subregion; 
-  			} else {
-  				d.region = "North America";
-  			}
-      // colors for identifying separate clusters
-        switch(continentClusterCodes[d.region]) {
-          case 1:
-            d.color = "#ffff00";
-            break;
-          case 2:
-            d.color = "#00ffff";
-            break;
-          case 3:
-            d.color = "#00ff00";
-            break;
-          case 4:
-            d.color = "#0000ff";
-            break;
-          case 5:
-            d.color = "#007700";
-            break;
-          case 6:
-            d.color = "#ff00ff";
-            break;
-          case 7:
-            d.color = "#770000";
-            break;
-          default:
-            d.color = "#ccc";
-        }
-  		}
+              /* if (!n_a3s.has(e.c_a3_g)) {
+                missing_a3s_n[e.c_a3_g] = e.gainer;
+              } else if (!n_a3s.has(e.c_a3_l)) {
+                missing_a3s_n[e.c_a3_l] = e.loser;
+              } */
+          });
+
+    			if (n.region != "Americas") {
+    				d.region = n.region;
+    			} else if (n.subregion == "South America") { 
+    				d.region = n.subregion; 
+    			} else {
+    				d.region = "North America";
+    			}
+        // colors for identifying separate clusters
+          switch(continentClusterCodes[d.region]) {
+            case 1:
+              d.color = "#ffff00";
+              break;
+            case 2:
+              d.color = "#00ffff";
+              break;
+            case 3:
+              d.color = "#00ff00";
+              break;
+            case 4:
+              d.color = "#0000ff";
+              break;
+            case 5:
+              d.color = "#007700";
+              break;
+            case 6:
+              d.color = "#ff00ff";
+              break;
+            case 7:
+              d.color = "#770000";
+              break;
+            default:
+              d.color = "#ccc";
+          }
+    		}
+      }
       /* else {
         console.log(n.id);
       } */
@@ -844,7 +849,7 @@ function startCluster(data) {
           d.y += 50;
           break;
         case 6:  // Oceania
-          d.y += 250;
+          d.y += 275;
           break;
         default:
           break;
@@ -854,9 +859,11 @@ function startCluster(data) {
     declumpSimulation = d3.forceSimulation()
       .nodes(data)
       .alpha(1)
-      .alphaMin(0.2)
+      .alphaMin(0.1)
       .force('repel', d3.forceManyBody()
-        .strength(-3))
+        .strength(-3)
+        .theta(1)
+      )
       .force('collide', function(alpha) {
         return collide(alpha, data)
       })
@@ -871,7 +878,7 @@ function startCluster(data) {
         .alpha(1)
         .alphaMin(0.1)
         .force("x", d3.forceX()
-          .strength(0.022)
+          .strength(-.0001*data.length + 0.022)
           .x(function(d) {
             if(d.region) {
               var cluster = continentCentroids[d.region];
@@ -882,7 +889,7 @@ function startCluster(data) {
           })
         )
         .force("y", d3.forceY()
-          .strength(0.022)
+          .strength(-.0001*data.length + 0.022)
           .y(function(d) {
             if(d.region) {
               var cluster = continentCentroids[d.region];
@@ -915,7 +922,7 @@ function startGroupCluster(data) {
     .alphaMin(0.1)
     .force('attract', d3.forceAttract()
       .target([mapWidth/2,mapHeight/2])
-      .strength(-.0001*data.length + 0.032)// -.00013158*data.length + 0.05132) // needs more force when there are fewer points
+      .strength(-.0001*data.length + 0.03)// -.00013158*data.length + 0.05132) // needs more force when there are fewer points
     )
     .force('collide', function(alpha) {
       return collide(alpha, data)
@@ -1458,6 +1465,10 @@ function updateBubbles(newData, type, isNet) {
       }
       populationLine += pop.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
       landLine += land.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " km^2";
+      // TEST
+      populationLine += " " + d.x;
+      landLine += " " + d.y;
+      // END TEST
       text = d.name + populationLine + landLine;
     tooltipDiv.transition()    
         .duration(200)    
