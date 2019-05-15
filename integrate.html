@@ -587,7 +587,7 @@ d3.queue()
   .defer(d3.json, "world-continents.json")
   .defer(d3.json, "world-countries.json")
   .defer(d3.csv, "world_country_names.csv")
-  .defer(d3.csv, "sankey.csv")
+  .defer(d3.csv, "prototypes-and-examples/sankey.csv")
   .await(setup);
 /* End file loading section */
 
@@ -1379,7 +1379,7 @@ function getNewData(lower_bound, upper_bound, type, exchange, gains) {
 /* Aggregates data from wrangle.csv given current conditions and sums for net data */
 function getNewNetData(lower_bound, upper_bound, type, exchange) {
 
-	d3.csv("sankey.csv", 
+	d3.csv("prototypes-and-examples/sankey.csv", 
 			function(d) {
 				d.exchange = d["procedure"];
 				d.land = +d["area"];
@@ -1654,7 +1654,7 @@ function updateSankey(lower_bound, upper_bound, exchangeType, country, isLand) {
 		format = function(d) { return formatNumber(d) + " " + units; }, 
 		color = d3v3.scale.category20();  // d3.v3
   
-	d3v3.csv("sankey.csv", function(error, data) {
+	d3v3.csv("prototypes-and-examples/sankey.csv", function(error, data) {
 		var dataTimeTypeFiltered = data.filter(function(d) {
 			if (exchangeType != "All") {
 				return d.year >= lower_bound && d.year <= upper_bound && d.procedure == exchangeType;
