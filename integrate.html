@@ -1195,7 +1195,7 @@ function collide(data) {
 
 /* Updates the timeline given a new exchange type.  Default is All */
 function updateTimeline(exchangeType) {
-	d3.csv("sankey.csv", 
+	d3.csv("prototypes-and-examples/sankey.csv", 
 		function(d) {
 			d.exchange = +d["procedure"];
 			d.land = +d["area"];
@@ -1329,7 +1329,7 @@ function brushed() {
 function getNewData(lower_bound, upper_bound, type, exchange, gains) {
 	// Generate new centroid data with updated parameters
 
-	var check = d3.csv("sankey.csv", 
+	var check = d3.csv("prototypes-and-examples/sankey.csv", 
 						// populate the fields correctly
 						function(d) {
 							d.exchange = d["procedure"];
