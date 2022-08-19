@@ -1,6 +1,6 @@
 # A-Brief-History-of-Territorial-Exchange
 
-To view this visualization: Go to [https://dlamaute.github.io/A-Brief-History-of-Territorial-Exchange/integrate.html](https://dlamaute.github.io/A-Brief-History-of-Territorial-Exchange/integrate.html) using Firefox.  We have found that other browsers (Chrome, Safari, etc) may not work with the csv reading security permissions.  It may take upwards of 1 minute to load.
+To view this visualization: Go to [https://dlamaute.github.io/A-Brief-History-of-Territorial-Exchange/integrate.html](https://dlamaute.github.io/A-Brief-History-of-Territorial-Exchange/integrate.html) using **Firefox**.  We have found that other browsers (Chrome, Safari, etc) may not work with the CSV reading security permissions.  It may take upwards of 1 minute to load.
 
 Project Process:
 
